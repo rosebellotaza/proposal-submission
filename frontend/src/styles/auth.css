@@ -1,0 +1,147 @@
+/* ===== LAYOUT ===== */
+.split-container {
+  display: grid;
+  grid-template-columns: 8fr 4fr;
+  height: 100vh;
+}
+
+/* LEFT */
+.left-panel {
+  background: url("/src/assets/school.png") no-repeat center center;
+  background-size: cover;
+  position: relative;
+}
+
+.left-panel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.25);
+}
+
+/* RIGHT */
+.right-panel {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 50px 60px;
+  background: linear-gradient(to bottom right, #f7f9fb, #eef2f6);
+  border-left: 1px solid #e5e7eb;
+}
+
+/* FORM */
+.form-container {
+  width: 100%;
+  max-width: 420px;
+  padding: 40px 35px;
+  border-radius: 16px;
+
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(12px);
+
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+}
+
+/* HEADER */
+.form-header {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.form-header h1 {
+  font-size: 20px;
+  margin: 0;
+}
+
+.form-header p {
+  font-size: 12px;
+  color: #888;
+}
+
+/* TITLES */
+h2 {
+  text-align: center;
+  margin-bottom: 5px;
+}
+
+.subtitle {
+  text-align: center;
+  font-size: 14px;
+  color: #777;
+  margin-bottom: 25px;
+}
+
+/* GROUP */
+.form-group {
+  margin-bottom: 18px;
+}
+
+/* INPUTS */
+label {
+  font-size: 13px;
+  color: #444;
+}
+
+input,
+select {
+  width: 100%;
+  padding: 12px;
+  margin-top: 6px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  font-size: 14px;
+  transition: 0.2s;
+}
+
+select {
+  background-color: var(--light-color);
+}
+
+input:focus,
+select:focus {
+  border-color: var(--main-color);
+  box-shadow: 0 0 0 2px rgba(0,0,0,0.03);
+}
+
+/* BUTTON */
+.primary-btn {
+  width: 100%;
+  padding: 14px;
+  margin-top: 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  color: white;
+  background-color: var(--main-color);
+  box-shadow: 0 8px 18px rgba(0,0,0,0.12);
+  transition: 0.2s;
+}
+
+.primary-btn:hover {
+  transform: translateY(-1px);
+}
+
+/* LINK */
+.signup {
+  text-align: center;
+  margin-top: 15px;
+}
+
+.signup span {
+  color: var(--main-color);
+  cursor: pointer;
+}
+
+/* RESPONSIVE */
+@media (max-width: 900px) {
+  .split-container {
+    grid-template-columns: 1fr;
+  }
+
+  .left-panel {
+    height: 250px;
+  }
+
+  .form-container {
+    width: 90%;
+  }
+}

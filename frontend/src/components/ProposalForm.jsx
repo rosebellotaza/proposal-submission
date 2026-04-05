@@ -1,46 +1,92 @@
-import { useState, useRef } from 'react'
-import axios from 'axios'
-import SignatureCanvas from 'react-signature-canvas'
-import './css/ProposalForm.css'
+import { useState } from "react";
 
-export default function ProposalForm() {
-  const [title, setTitle] = useState('')
-  const [content, setContent] = useState('')
-  const sigRef = useRef()
+export default function ProposalForm(){
 
-  const handleSubmit = async () => {
-    if (!title || !content) return alert('Please fill in all fields!')
-    const signature = sigRef.current.toDataURL()
-    await axios.post('http://localhost:5000/api/proposals', { title, content, signature })
-    alert('✅ Proposal saved!')
-    setTitle('')
-    setContent('')
-    sigRef.current.clear()
-  }
+  const [title,setTitle] = useState("");
+  const [area,setArea] = useState("");
+  const [problem,setProblem] = useState("");
+  const [gap,setGap] = useState("");
+  const [file,setFile] = useState(null);
 
-  return (
+  const handleSubmit = (e)=>{
+    e.preventDefault();
+
+    const proposalData = {
+      title,
+      area,
+      problem,
+      gap,
+      file
+    };
+
+    console.log("Proposal submitted:",proposalData);
+
+    alert("Proposal submitted successfully!");
+
+    setTitle("");
+    setArea("");
+    setProblem ("");
+    setGap("");
+    setFile(null);
+  };
+
+  return(
     <div className="proposal-form">
-      <h2>📝 Write Proposal</h2>
-      <input
-        placeholder="Proposal Title"
-        value={title}
-        onChange={e => setTitle(e.target.value)}
-      />
-      <textarea
-        placeholder="Proposal Content"
-        value={content}
-        onChange={e => setContent(e.target.value)}
-        rows={6}
-      />
-      <h4>✍️ Signature</h4>
-      <SignatureCanvas
-        ref={sigRef}
-        canvasProps={{ width: 500, height: 150, className: 'signature-box' }}
-      />
-      <div className="form-buttons">
-        <button className="clear-btn" onClick={() => sigRef.current.clear()}>Clear</button>
-        <button className="submit-btn" onClick={handleSubmit}>Submit Proposal</button>
-      </div>
+
+      <h3>Submit Thesis Proposal</h3>
+
+      <form onSubmit={handleSubmit}>
+
+        <label>Thesis Title</label>
+        <input
+          type="text"
+          placeholder="Enter thesis title"
+          value={title}
+          onChange={(e)=>setTitle(e.target.value)}
+          required
+        />
+
+        <label>Research Area</label>
+        <input
+          type="text"
+          placeholder="Artificial Intelligence / Data Science / etc."
+          value={area}
+          onChange={(e)=>setArea(e.target.value)}
+          required
+        />
+
+        <label>Problem Identification</label>
+        <input
+          type="text"
+          placeholder="Write the problem."
+          value={problem}
+          onChange={(e)=>setProblem(e.target.value)}
+          required
+        />
+
+        <label>Gap Details</label>
+        <input
+          type="text"
+          placeholder="Artificial Intelligence / Data Science / etc."
+          value={gap}
+          onChange={(e)=>setGap(e.target.value)}
+          required
+        />
+
+        <label>Upload Proposal (PDF)</label>
+        <input
+          type="file"
+          accept=".pdf"
+          onChange={(e)=>setFile(e.target.files[0])}
+          required
+        />
+
+        <button className="primary-btn">
+          Submit Proposal
+        </button>
+
+      </form>
+
     </div>
-  )
+  );
 }

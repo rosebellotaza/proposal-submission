@@ -1,15 +1,30 @@
-import { NavLink } from 'react-router-dom'
-import './css/Navbar.css'
+export default function Navbar({ name, role }) {
 
-export default function Navbar() {
   return (
-    <nav className="navbar">
-      <div className="navbar-brand">📋 Proposal Submission System</div>
-      <ul className="navbar-links">
-        <li><NavLink to="/" className={({ isActive }) => isActive ? 'active' : ''}>🏠 Home</NavLink></li>
-        <li><NavLink to="/upload" className={({ isActive }) => isActive ? 'active' : ''}>📁 File Upload</NavLink></li>
-        <li><NavLink to="/proposal" className={({ isActive }) => isActive ? 'active' : ''}>📝 Proposal</NavLink></li>
-      </ul>
-    </nav>
-  )
+    <div className="navbar">
+
+      <div className="logo-section">
+        <div className="logo">🎓</div>
+
+        <div>
+          <h3>Thesis Proposal System</h3>
+          <p>Academic Research Portal</p>
+        </div>
+      </div>
+
+      <div className="user-section">
+
+        <div>
+          <strong>{name}</strong>
+          <p>{role}</p>
+        </div>
+
+        <button className="logout-btn">
+          Logout
+        </button>
+
+      </div>
+
+    </div>
+  );
 }
