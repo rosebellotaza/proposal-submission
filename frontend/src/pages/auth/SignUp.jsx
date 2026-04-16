@@ -4,23 +4,54 @@ import { useNavigate } from "react-router-dom";
 import { UserPlus } from "lucide-react";
 import logo from "../../assets/logo.png";
 import schoolBg from "../../assets/school.png";
+import { saveUser, setSession, dashboardRoute } from "../../utils/auth";
 
 const roleThemes = {
   researcher: { color: "#1a6b1a", light: "#e6f4ea" },
-  evaluator: { color: "#6a0dad", light: "#f3e8ff" },
+  evaluator:  { color: "#6a0dad", light: "#f3e8ff" },
 };
 
 export default function SignUp() {
-  const [role, setRole] = useState("researcher");
+  const [role,     setRole]     = useState("researcher");
+  const [name,     setName]     = useState("");
+  const [email,    setEmail]    = useState("");
+  const [password, setPassword] = useState("");
+  const [confirm,  setConfirm]  = useState("");
+  const [error,    setError]    = useState("");
   const navigate = useNavigate();
   const theme = roleThemes[role];
 
+  const handleSignUp = () => {
+    setError("");
+
+    if (!name || !email || !password || !confirm) {
+      setError("Please fill in all fields.");
+      return;
+    }
+
+    if (password !== confirm) {
+      setError("Passwords do not match.");
+      return;
+    }
+
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters.");
+      return;
+    }
+
+    const user = { name, email, password, role };
+    saveUser(user);
+    setSession(user);
+    navigate(dashboardRoute(role));
+  };
+
   return (
-<div className="auth-bg" style={{ backgroundImage: `url(${schoolBg})` }}>      <div
+    <div className="auth-bg" style={{ backgroundImage: `url(${schoolBg})` }}>
+      <div
         className="auth-card"
         style={{ "--main-color": theme.color, "--light-color": theme.light }}
       >
-        {/* Green Header */}
+        {/* Header */}
         <div className="card-header">
           <img src={logo} alt="CSU Logo" className="school-logo" />
           <h1 className="school-name">Research PMS</h1>
@@ -36,6 +67,10 @@ export default function SignUp() {
           <h2>Create Account</h2>
           <p className="subtitle">Sign up to get started</p>
 
+          {error && (
+            <div className="auth-error">{error}</div>
+          )}
+
           <div className="form-group">
             <label>Select Role</label>
             <div className="select-wrapper">
@@ -49,32 +84,53 @@ export default function SignUp() {
 
           <div className="form-group">
             <label>Full Name</label>
-            <input type="text" placeholder="Juan Dela Cruz" />
+            <input
+              type="text"
+              placeholder="Juan Dela Cruz"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
           </div>
 
           <div className="form-group">
             <label>Email Address</label>
-            <input type="email" placeholder="name@csu.edu.ph" />
+            <input
+              type="email"
+              placeholder="name@csu.edu.ph"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
           </div>
 
           <div className="form-group">
             <label>Password</label>
-            <input type="password" placeholder="Enter your password" />
+            <input
+              type="password"
+              placeholder="Enter your password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
           </div>
 
           <div className="form-group">
             <label>Confirm Password</label>
-            <input type="password" placeholder="Confirm your password" />
+            <input
+              type="password"
+              placeholder="Confirm your password"
+              value={confirm}
+              onChange={(e) => setConfirm(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSignUp()}
+            />
           </div>
 
-          <button className="primary-btn">
+          <button className="primary-btn" onClick={handleSignUp}>
             <UserPlus size={18} />
             Sign Up
           </button>
 
           <p className="auth-link">
             Already have an account?{" "}
-            <span onClick={() => navigate("/")}>Sign In</span>
+            <span onClick={() => navigate("/login")}>Sign In</span>
           </p>
         </div>
       </div>

@@ -4,28 +4,48 @@ import { useNavigate } from "react-router-dom";
 import { LogIn } from "lucide-react";
 import logo from "../../assets/logo.png";
 import schoolBg from "../../assets/school.png";
+import { findUser, setSession, dashboardRoute } from "../../utils/auth";
 
 const roleThemes = {
   researcher: { color: "#1a6b1a", light: "#e6f4ea" },
-  evaluator: { color: "#6a0dad", light: "#f3e8ff" },
+  evaluator:  { color: "#6a0dad", light: "#f3e8ff" },
 };
 
 export default function Login() {
-  const [role, setRole] = useState("researcher");
+  const [role,     setRole]     = useState("researcher");
+  const [email,    setEmail]    = useState("");
+  const [password, setPassword] = useState("");
+  const [error,    setError]    = useState("");
   const navigate = useNavigate();
   const theme = roleThemes[role];
 
   const handleSignIn = () => {
-    localStorage.setItem("role", role);
-    const routes = {
-        researcher: "/researcher/dashboard",
-        evaluator:  "/evaluator/dashboard",
-      };
-    navigate(routes[role]);
+    setError("");
+
+    if (!email || !password) {
+      setError("Please fill in all fields.");
+      return;
+    }
+
+    const user = findUser(email);
+
+    // If no registered user found, allow login with entered email as name
+    // (demo mode — in production you'd reject unknown users)
+    const sessionUser = user
+      ? user
+      : { name: email.split("@")[0], email, role };
+
+    if (sessionUser.role !== role) {
+      setError(`This account is registered as a ${sessionUser.role}, not ${role}.`);
+      return;
+    }
+
+    setSession(sessionUser);
+    navigate(dashboardRoute(role));
   };
 
   return (
-<div className="auth-bg" style={{ backgroundImage: `url(${schoolBg})` }}>
+    <div className="auth-bg" style={{ backgroundImage: `url(${schoolBg})` }}>
       <div
         className="auth-card"
         style={{ "--main-color": theme.color, "--light-color": theme.light }}
@@ -46,6 +66,10 @@ export default function Login() {
           <h2>Welcome Back</h2>
           <p className="subtitle">Sign in to continue to your account</p>
 
+          {error && (
+            <div className="auth-error">{error}</div>
+          )}
+
           <div className="form-group">
             <label>Select Role</label>
             <div className="select-wrapper">
@@ -59,12 +83,24 @@ export default function Login() {
 
           <div className="form-group">
             <label>Email Address</label>
-            <input type="email" placeholder="name@csu.edu.ph" />
+            <input
+              type="email"
+              placeholder="name@csu.edu.ph"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSignIn()}
+            />
           </div>
 
           <div className="form-group">
             <label>Password</label>
-            <input type="password" placeholder="Enter your password" />
+            <input
+              type="password"
+              placeholder="Enter your password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSignIn()}
+            />
           </div>
 
           <button className="primary-btn" onClick={handleSignIn}>
