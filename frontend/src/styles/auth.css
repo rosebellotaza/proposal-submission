@@ -71,11 +71,6 @@ h2 {
   margin-bottom: 25px;
 }
 
-/* GROUP */
-.form-group {
-  margin-bottom: 18px;
-}
-
 /* INPUTS */
 label {
   font-size: 13px;
@@ -144,4 +139,200 @@ select:focus {
   .form-container {
     width: 90%;
   }
+}
+
+/*AUTH PAGE SPECIFIC */
+/* ── Background ── */
+.auth-bg {
+  min-height: 100vh;
+  background-size: cover;
+  background-position: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+/* ── Card ── */
+.auth-card {
+  width: 100%;
+  max-width: 420px;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+  background: white;
+}
+
+/* ── Green Header ── */
+.card-header {
+  background: linear-gradient(135deg, #3aaf5c 0%, #1a6b1a 100%);
+  padding: 32px 24px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.school-logo {
+  width: 80px;
+  height: 80px;
+  object-fit: contain;
+}
+
+.school-name {
+  color: white;
+  font-size: 1.9rem;
+  font-weight: 800;
+  margin: 0;
+  letter-spacing: 0.5px;
+}
+
+.school-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  justify-content: center;
+}
+
+.divider-line {
+  display: inline-block;
+  width: 48px;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.school-sub {
+  font-size: 0.72rem;
+  letter-spacing: 2.5px;
+  color: rgba(255, 255, 255, 0.92);
+  font-weight: 600;
+}
+
+/* ── Form Body ── */
+.card-body {
+  padding: 28px 32px 32px;
+}
+
+.card-body h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #111827;
+  text-align: center;
+  margin: 0 0 4px;
+}
+
+.subtitle {
+  color: #6b7280;
+  text-align: center;
+  font-size: 0.88rem;
+  margin: 0 0 20px;
+}
+
+/* ── Form Fields ── */
+.form-group {
+  margin-bottom: 14px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 5px;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.93rem;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.2s;
+  background: white;
+}
+
+.form-group input:focus {
+  border-color: var(--main-color);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--main-color) 15%, transparent);
+}
+
+/* ── Role Select ── */
+.select-wrapper {
+  position: relative;
+}
+
+.select-wrapper select {
+  width: 100%;
+  padding: 10px 36px 10px 14px;
+  border: 1.5px solid var(--main-color);
+  border-radius: 8px;
+  font-size: 0.93rem;
+  outline: none;
+  box-sizing: border-box;
+  appearance: none;
+  background: white;
+  color: #111827;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.select-wrapper select:focus {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--main-color) 15%, transparent);
+}
+
+.select-dot {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--main-color);
+  pointer-events: none;
+}
+
+/* ── Button ── */
+.primary-btn {
+  width: 100%;
+  padding: 12px;
+  background: var(--main-color, #1a6b1a);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 6px;
+  transition: filter 0.2s;
+}
+
+.primary-btn:hover {
+  filter: brightness(1.1);
+}
+
+/* ── Bottom Link ── */
+.auth-link {
+  text-align: center;
+  margin-top: 16px;
+  font-size: 0.88rem;
+  color: #6b7280;
+}
+
+.auth-link span {
+  color: var(--main-color);
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.auth-link span:hover {
+  text-decoration: underline;
 }

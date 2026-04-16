@@ -1,11 +1,13 @@
 import { useState } from "react";
 import "../../styles/auth.css";
 import { useNavigate } from "react-router-dom";
+import { LogIn } from "lucide-react";
+import logo from "../../assets/logo.png";
+import schoolBg from "../../assets/school.png";
 
 const roleThemes = {
-  researcher: { color: "#1f7a1f", light: "#e6f4ea" },
+  researcher: { color: "#1a6b1a", light: "#e6f4ea" },
   evaluator: { color: "#6a0dad", light: "#f3e8ff" },
-  approver: { color: "#d4a017", light: "#fff8dc" },
 };
 
 export default function Login() {
@@ -15,62 +17,63 @@ export default function Login() {
 
   const handleSignIn = () => {
     localStorage.setItem("role", role);
-
     const routes = {
       researcher: "/researcher/dashboard",
       evaluator: "/evaluator/dashboard",
-      approver: "/approver/dashboard",
     };
-
     navigate(routes[role]);
   };
 
   return (
-    <div className="split-container login-page">
-      <div className="left-panel" />
-
-      <div className="right-panel">
-        <div
-          className="form-container"
-          style={{
-            "--main-color": theme.color,
-            "--light-color": theme.light,
-          }}
-        >
-          <div className="form-header">
-            <h1>Research PMS</h1>
-            <p>Project Proposal Management System</p>
+<div className="auth-bg" style={{ backgroundImage: `url(${schoolBg})` }}>
+      <div
+        className="auth-card"
+        style={{ "--main-color": theme.color, "--light-color": theme.light }}
+      >
+        {/* Green Header */}
+        <div className="card-header">
+          <img src={logo} alt="CSU Logo" className="school-logo" />
+          <h1 className="school-name">Research PMS</h1>
+          <div className="school-divider">
+            <span className="divider-line" />
+            <span className="school-sub">GRADUATE SCHOOL</span>
+            <span className="divider-line" />
           </div>
+        </div>
 
-          <h2>Sign In</h2>
-          <p className="subtitle">Enter your credentials to continue</p>
+        {/* Form Body */}
+        <div className="card-body">
+          <h2>Welcome Back</h2>
+          <p className="subtitle">Sign in to continue to your account</p>
 
           <div className="form-group">
-            <label>Role</label>
-            <select value={role} onChange={(e) => setRole(e.target.value)}>
-              <option value="researcher">Researcher</option>
-              <option value="evaluator">Evaluator</option>
-              <option value="approver">Approver</option>
-            </select>
+            <label>Select Role</label>
+            <div className="select-wrapper">
+              <select value={role} onChange={(e) => setRole(e.target.value)}>
+                <option value="researcher">Researcher</option>
+                <option value="evaluator">Evaluator</option>
+              </select>
+              <span className="select-dot" />
+            </div>
           </div>
 
           <div className="form-group">
-            <label>Email</label>
-            <input type="email" placeholder="name@university.edu" />
+            <label>Email Address</label>
+            <input type="email" placeholder="name@csu.edu.ph" />
           </div>
 
           <div className="form-group">
             <label>Password</label>
-            <input type="password" placeholder="••••••••" />
+            <input type="password" placeholder="Enter your password" />
           </div>
 
-          {/* ✅ UPDATED BUTTON */}
           <button className="primary-btn" onClick={handleSignIn}>
+            <LogIn size={18} />
             Sign In
           </button>
 
-          <p className="signup">
-            Don’t have an account?{" "}
+          <p className="auth-link">
+            Don't have an account?{" "}
             <span onClick={() => navigate("/signup")}>Sign Up</span>
           </p>
         </div>
