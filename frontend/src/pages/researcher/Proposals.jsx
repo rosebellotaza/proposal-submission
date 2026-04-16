@@ -1,10 +1,12 @@
 import { useState, useRef, useEffect } from "react";
 import {
   ChevronDown, Upload, Check, Plus, Trash2, FileText, Send,
+  Users, Search, X, CheckCircle2, UserCheck, ChevronRight,
 } from "lucide-react";
 import Navbar from "../../components/researcher/Navbar";
 import Topbar from "../../components/Topbar";
 import "../../styles/researcher.css";
+import { FACULTY_BY_COLLEGE, DEFAULT_EVALUATORS } from "../../data/faculty";
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 const TEAM_MEMBERS = [
@@ -26,7 +28,305 @@ const CATEGORY_COLORS = {
   Publication: { bg: "#fdf2f8", color: "#9d174d" },
 };
 
-// ─── Simple file input row ────────────────────────────────────────────────────
+// ─── Evaluator Assignment Modal ───────────────────────────────────────────────
+function EvaluatorModal({ onClose, onAdd, alreadyAdded }) {
+  const [search,          setSearch]          = useState("");
+  const [openCollege,     setOpenCollege]      = useState(null);
+  const [selectedFaculty, setSelectedFaculty] = useState([]);
+
+  const colleges = Object.keys(FACULTY_BY_COLLEGE);
+
+  const toggleCollege = (c) => setOpenCollege(openCollege === c ? null : c);
+
+  const toggleSelect = (member, college) => {
+    const key = member.id;
+    if (selectedFaculty.find((f) => f.id === key)) {
+      setSelectedFaculty((p) => p.filter((f) => f.id !== key));
+    } else {
+      setSelectedFaculty((p) => [...p, { ...member, college }]);
+    }
+  };
+
+  const isAlreadyAdded = (id) =>
+    alreadyAdded.some((f) => f.id === id);
+
+  const isSelected = (id) =>
+    selectedFaculty.some((f) => f.id === id);
+
+  const filteredColleges = colleges.filter((college) => {
+    if (!search) return true;
+    const lc = search.toLowerCase();
+    return (
+      college.toLowerCase().includes(lc) ||
+      FACULTY_BY_COLLEGE[college].some(
+        (f) =>
+          f.name.toLowerCase().includes(lc) ||
+          f.expertise.toLowerCase().includes(lc)
+      )
+    );
+  });
+
+  const getFilteredMembers = (college) => {
+    if (!search) return FACULTY_BY_COLLEGE[college];
+    const lc = search.toLowerCase();
+    return FACULTY_BY_COLLEGE[college].filter(
+      (f) =>
+        f.name.toLowerCase().includes(lc) ||
+        f.expertise.toLowerCase().includes(lc) ||
+        college.toLowerCase().includes(lc)
+    );
+  };
+
+  const handleConfirm = () => {
+    if (selectedFaculty.length === 0) return;
+    onAdd(selectedFaculty);
+    onClose();
+  };
+
+  return (
+    <div className="tm-modal-overlay" onClick={onClose}>
+      <div
+        className="ev-faculty-modal"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="tm-modal-header">
+          <div>
+            <h3 className="tm-modal-title">Select Preferred Evaluators</h3>
+            <p className="tm-modal-subtitle">
+              Browse faculty by college and select your preferred evaluators
+            </p>
+          </div>
+          <button className="tm-modal-close" onClick={onClose}>
+            <X size={16} />
+          </button>
+        </div>
+
+        {/* Search */}
+        <div className="ev-faculty-search">
+          <Search size={16} color="#9ca3af" />
+          <input
+            type="text"
+            placeholder="Search by name, college, or expertise..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            autoFocus
+          />
+          {search && (
+            <button
+              style={{
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                color: "#9ca3af",
+              }}
+              onClick={() => setSearch("")}
+            >
+              <X size={14} />
+            </button>
+          )}
+        </div>
+
+        {/* Selected count */}
+        {selectedFaculty.length > 0 && (
+          <div className="ev-selected-count">
+            <CheckCircle2 size={14} color="#7c3aed" />
+            <span>
+              {selectedFaculty.length} faculty selected
+            </span>
+          </div>
+        )}
+
+        {/* College accordion */}
+        <div className="ev-college-list">
+          {filteredColleges.length === 0 ? (
+            <div
+              style={{
+                textAlign: "center",
+                padding: "32px",
+                color: "#9ca3af",
+                fontSize: 14,
+              }}
+            >
+              No results found for "{search}"
+            </div>
+          ) : (
+            filteredColleges.map((college) => {
+              const members    = getFilteredMembers(college);
+              const isOpen     = openCollege === college || !!search;
+              const selCount   = members.filter((m) => isSelected(m.id)).length;
+
+              return (
+                <div key={college} className="ev-college-item">
+                  {/* College header */}
+                  <div
+                    className="ev-college-header"
+                    onClick={() => !search && toggleCollege(college)}
+                    style={{ cursor: search ? "default" : "pointer" }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 10,
+                      }}
+                    >
+                      <div className="ev-college-dot" />
+                      <div>
+                        <p className="ev-college-name">{college}</p>
+                        <p className="ev-college-count">
+                          {members.length} faculty member
+                          {members.length !== 1 ? "s" : ""}
+                          {selCount > 0 && (
+                            <span className="ev-college-sel-badge">
+                              {selCount} selected
+                            </span>
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                    {!search && (
+                      <ChevronRight
+                        size={16}
+                        color="#9ca3af"
+                        style={{
+                          transform: isOpen ? "rotate(90deg)" : "rotate(0)",
+                          transition: "transform 0.2s",
+                        }}
+                      />
+                    )}
+                  </div>
+
+                  {/* Faculty members */}
+                  {(isOpen || search) && members.length > 0 && (
+                    <div className="ev-faculty-list">
+                      {members.map((member) => {
+                        const added    = isAlreadyAdded(member.id);
+                        const selected = isSelected(member.id);
+                        return (
+                          <div
+                            key={member.id}
+                            className={`ev-faculty-row ${selected ? "selected" : ""} ${added ? "added" : ""}`}
+                            onClick={() =>
+                              !added && toggleSelect(member, college)
+                            }
+                          >
+                            <div
+                              className={`ev-faculty-checkbox ${selected ? "checked" : ""}`}
+                            >
+                              {selected && (
+                                <Check size={11} color="white" />
+                              )}
+                            </div>
+                            <div className="ev-faculty-info">
+                              <p className="ev-faculty-name">
+                                {member.name}
+                                {added && (
+                                  <span className="ev-already-badge">
+                                    Already added
+                                  </span>
+                                )}
+                              </p>
+                              <p className="ev-faculty-pos">
+                                {member.position}
+                              </p>
+                              <p className="ev-faculty-exp">
+                                {member.expertise}
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="ev-modal-footer">
+          <button className="cp-btn" onClick={onClose}>
+            Cancel
+          </button>
+          <button
+            className="cp-btn primary"
+            style={{
+              background: "#1f7a1f",
+              borderColor: "#1f7a1f",
+              opacity: selectedFaculty.length === 0 ? 0.5 : 1,
+              cursor: selectedFaculty.length === 0 ? "not-allowed" : "pointer",
+            }}
+            onClick={handleConfirm}
+            disabled={selectedFaculty.length === 0}
+          >
+            Add {selectedFaculty.length > 0 ? `(${selectedFaculty.length})` : ""} Evaluator
+            {selectedFaculty.length !== 1 ? "s" : ""}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── ComboBox ─────────────────────────────────────────────────────────────────
+function ComboBox({ value, onChange, options, placeholder }) {
+  const [open,  setOpen]  = useState(false);
+  const [query, setQuery] = useState(value || "");
+  const wrapRef = useRef(null);
+  const filtered = options.filter((o) =>
+    o.toLowerCase().includes(query.toLowerCase())
+  );
+
+  useEffect(() => {
+    const h = (e) => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target))
+        setOpen(false);
+    };
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, []);
+
+  return (
+    <div className="cp-combo-wrap" ref={wrapRef}>
+      <input
+        className="cp-input"
+        type="text"
+        value={query}
+        placeholder={placeholder}
+        onChange={(e) => {
+          setQuery(e.target.value);
+          onChange(e.target.value);
+          setOpen(true);
+        }}
+        onFocus={() => setOpen(true)}
+      />
+      <span className="cp-combo-chevron">
+        <ChevronDown size={14} />
+      </span>
+      {open && filtered.length > 0 && (
+        <div className="cp-dropdown">
+          {filtered.map((opt) => (
+            <div
+              key={opt}
+              className="cp-dropdown-item"
+              onMouseDown={() => {
+                setQuery(opt);
+                onChange(opt);
+                setOpen(false);
+              }}
+            >
+              {opt}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── File Input Row ───────────────────────────────────────────────────────────
 function FileInputRow({ label, required, multiple, accept }) {
   const [files, setFiles] = useState([]);
   const ref = useRef(null);
@@ -46,7 +346,10 @@ function FileInputRow({ label, required, multiple, accept }) {
             ? files[0].name
             : `${files.length} files selected`}
         </span>
-        <button className="cp-file-upload-icon" onClick={() => ref.current.click()}>
+        <button
+          className="cp-file-upload-icon"
+          onClick={() => ref.current.click()}
+        >
           <Upload size={16} color="#6b7280" />
         </button>
         <input
@@ -62,14 +365,19 @@ function FileInputRow({ label, required, multiple, accept }) {
   );
 }
 
-// ─── Simple upload tab section (Work Plan / Framework / References) ───────────
+// ─── Simple Upload Tab ────────────────────────────────────────────────────────
 function SimpleUploadTab({ title, subtitle, fieldLabel, note, accept }) {
   return (
     <div className="cp-section">
-      <div className="cp-section-title" style={{ borderBottom: "none", marginBottom: 4 }}>
+      <div
+        className="cp-section-title"
+        style={{ borderBottom: "none", marginBottom: 4 }}
+      >
         {title}
       </div>
-      <p style={{ fontSize: 13, color: "#6b7280", margin: "0 0 20px" }}>{subtitle}</p>
+      <p style={{ fontSize: 13, color: "#6b7280", margin: "0 0 20px" }}>
+        {subtitle}
+      </p>
       <FileInputRow label={fieldLabel} required accept={accept} />
       {note && (
         <div className="cp-note-box">
@@ -80,7 +388,7 @@ function SimpleUploadTab({ title, subtitle, fieldLabel, note, accept }) {
   );
 }
 
-// ─── Conditional yes/no question ──────────────────────────────────────────────
+// ─── Conditional Question ─────────────────────────────────────────────────────
 function ConditionalQuestion({ question, name, flip = false, children }) {
   const [answer, setAnswer] = useState(null);
   const show = flip ? answer === "no" : answer === "yes";
@@ -106,80 +414,76 @@ function ConditionalQuestion({ question, name, flip = false, children }) {
   );
 }
 
-// ─── ComboBox ─────────────────────────────────────────────────────────────────
-function ComboBox({ value, onChange, options, placeholder }) {
-  const [open, setOpen] = useState(false);
-  const [query, setQuery] = useState(value || "");
-  const wrapRef = useRef(null);
-  const filtered = options.filter((o) => o.toLowerCase().includes(query.toLowerCase()));
-
-  useEffect(() => {
-    const h = (e) => { if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false); };
-    document.addEventListener("mousedown", h);
-    return () => document.removeEventListener("mousedown", h);
-  }, []);
-
-  return (
-    <div className="cp-combo-wrap" ref={wrapRef}>
-      <input
-        className="cp-input"
-        type="text"
-        value={query}
-        placeholder={placeholder}
-        onChange={(e) => { setQuery(e.target.value); onChange(e.target.value); setOpen(true); }}
-        onFocus={() => setOpen(true)}
-      />
-      <span className="cp-combo-chevron"><ChevronDown size={14} /></span>
-      {open && filtered.length > 0 && (
-        <div className="cp-dropdown">
-          {filtered.map((opt) => (
-            <div key={opt} className="cp-dropdown-item"
-              onMouseDown={() => { setQuery(opt); onChange(opt); setOpen(false); }}>
-              {opt}
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ─── TABS ─────────────────────────────────────────────────────────────────────
-
-// Overview Tab
+// ─── Overview Tab ─────────────────────────────────────────────────────────────
 function OverviewTab() {
-  const [leader, setLeader] = useState("");
+  const [leader,          setLeader]          = useState("");
   const [selectedMembers, setSelectedMembers] = useState([]);
+
+  // Evaluators
+  const [preferredEvaluators, setPreferredEvaluators] = useState([]);
+  const [showEvalModal,       setShowEvalModal]        = useState(false);
+
+  // Auto-assigned defaults
+  const defaultEvaluators = DEFAULT_EVALUATORS;
+
+  const allAdded = [
+    ...defaultEvaluators,
+    ...preferredEvaluators,
+  ];
+
   const toggleMember = (id) =>
-    setSelectedMembers((p) => p.includes(id) ? p.filter((m) => m !== id) : [...p, id]);
+    setSelectedMembers((p) =>
+      p.includes(id) ? p.filter((m) => m !== id) : [...p, id]
+    );
+
+  const removePreferred = (id) =>
+    setPreferredEvaluators((p) => p.filter((e) => e.id !== id));
+
+  const handleAddEvaluators = (selected) => {
+    const newOnes = selected.filter(
+      (s) => !allAdded.some((a) => a.id === s.id)
+    );
+    setPreferredEvaluators((p) => [...p, ...newOnes]);
+  };
 
   return (
     <>
-      {/* Basic Information */}
+      {/* ── Basic Information ── */}
       <div className="cp-section">
         <div className="cp-section-title">Basic Information</div>
         <div className="cp-grid-2">
           <div className="cp-field">
             <label className="cp-label">Proposal Title *</label>
-            <input className="cp-input" type="text" placeholder="Enter proposal title" />
+            <input
+              className="cp-input"
+              type="text"
+              placeholder="Enter proposal title"
+            />
           </div>
           <div className="cp-field">
             <label className="cp-label">Research Type *</label>
             <div className="cp-select-wrap">
               <select className="cp-select">
-                <option value="" disabled defaultValue="">e.g., Basic Research</option>
+                <option value="" disabled defaultValue="">
+                  e.g., Basic Research
+                </option>
                 <option>Basic Research</option>
                 <option>Applied Research</option>
                 <option>Developmental Research</option>
                 <option>Action Research</option>
               </select>
-              <span className="cp-select-chevron"><ChevronDown size={14} /></span>
+              <span className="cp-select-chevron">
+                <ChevronDown size={14} />
+              </span>
             </div>
           </div>
         </div>
         <div className="cp-field">
           <label className="cp-label">Abstract *</label>
-          <textarea className="cp-textarea" placeholder="Provide a brief abstract of your research..." />
+          <textarea
+            className="cp-textarea"
+            placeholder="Provide a brief abstract of your research..."
+          />
         </div>
         <div className="cp-grid-3">
           <div className="cp-field">
@@ -197,7 +501,7 @@ function OverviewTab() {
         </div>
       </div>
 
-      {/* Research Team */}
+      {/* ── Research Team ── */}
       <div className="cp-section">
         <div className="cp-section-title">Research Team</div>
         <div className="cp-field">
@@ -236,7 +540,97 @@ function OverviewTab() {
         </div>
       </div>
 
-      {/* Required Documents */}
+      {/* ── Evaluator Assignment ── */}
+      <div className="cp-section">
+        <div
+          className="cp-section-title"
+          style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}
+        >
+          <span>Evaluator Assignment</span>
+          <button
+            className="ev-add-eval-btn"
+            onClick={() => setShowEvalModal(true)}
+          >
+            <Plus size={14} /> Add Preferred Evaluator
+          </button>
+        </div>
+        <p style={{ fontSize: 13, color: "#6b7280", margin: "-6px 0 16px" }}>
+          Evaluators are automatically assigned. You may also suggest preferred evaluators from the faculty list.
+        </p>
+
+        {/* Default auto-assigned */}
+        <div style={{ marginBottom: preferredEvaluators.length > 0 ? 16 : 0 }}>
+          <p className="ev-eval-group-label">
+            <CheckCircle2 size={13} color="#1f7a1f" />
+            Auto-Assigned Evaluators
+          </p>
+          <div className="ev-evaluator-list">
+            {defaultEvaluators.map((ev) => (
+              <div key={ev.id} className="ev-evaluator-card default">
+                <div className="ev-evaluator-avatar">
+                  {ev.name.charAt(0)}
+                </div>
+                <div className="ev-evaluator-info">
+                  <p className="ev-evaluator-name">{ev.name}</p>
+                  <p className="ev-evaluator-pos">
+                    {ev.position} • {ev.college}
+                  </p>
+                  <p className="ev-evaluator-exp">{ev.expertise}</p>
+                </div>
+                <span className="ev-default-badge">Default</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Preferred / suggested */}
+        {preferredEvaluators.length > 0 && (
+          <div>
+            <p className="ev-eval-group-label">
+              <UserCheck size={13} color="#7c3aed" />
+              Preferred Evaluators
+            </p>
+            <div className="ev-evaluator-list">
+              {preferredEvaluators.map((ev) => (
+                <div key={ev.id} className="ev-evaluator-card preferred">
+                  <div
+                    className="ev-evaluator-avatar"
+                    style={{ background: "#f5f3ff", color: "#7c3aed" }}
+                  >
+                    {ev.name.charAt(0)}
+                  </div>
+                  <div className="ev-evaluator-info">
+                    <p className="ev-evaluator-name">{ev.name}</p>
+                    <p className="ev-evaluator-pos">
+                      {ev.position} • {ev.college}
+                    </p>
+                    <p className="ev-evaluator-exp">{ev.expertise}</p>
+                  </div>
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "flex-end",
+                      gap: 6,
+                    }}
+                  >
+                    <span className="ev-preferred-badge">Preferred</span>
+                    <button
+                      className="cp-delete-btn"
+                      onClick={() => removePreferred(ev.id)}
+                      style={{ padding: 3 }}
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── Required Documents ── */}
       <div className="cp-section">
         <div className="cp-section-title">Required Documents</div>
         <FileInputRow
@@ -253,7 +647,7 @@ function OverviewTab() {
         <p className="cp-file-hint">Upload multiple CV files if needed</p>
       </div>
 
-      {/* Additional Information */}
+      {/* ── Additional Information ── */}
       <div className="cp-section">
         <div className="cp-section-title">Additional Information</div>
 
@@ -261,7 +655,10 @@ function OverviewTab() {
           question="Is similar work being carried out elsewhere? If yes, please give details."
           name="q1"
         >
-          <textarea className="cp-textarea" placeholder="Please give details..." />
+          <textarea
+            className="cp-textarea"
+            placeholder="Please give details..."
+          />
         </ConditionalQuestion>
 
         <div className="cp-divider" />
@@ -270,7 +667,10 @@ function OverviewTab() {
           question="Are there any external groups or individuals, aside from the proponent(s) collaborating in this work? If yes, please specify and indicate the type of collaboration or expected contribution of the other party to this work."
           name="q2"
         >
-          <textarea className="cp-textarea" placeholder="Please specify collaborators..." />
+          <textarea
+            className="cp-textarea"
+            placeholder="Please specify collaborators..."
+          />
         </ConditionalQuestion>
 
         <div className="cp-divider" />
@@ -290,7 +690,11 @@ function OverviewTab() {
             </div>
             <div>
               <div className="cp-col-label">Extent of Difference</div>
-              <input className="cp-input" type="text" placeholder="How is it different?" />
+              <input
+                className="cp-input"
+                type="text"
+                placeholder="How is it different?"
+              />
             </div>
           </div>
         </ConditionalQuestion>
@@ -303,31 +707,48 @@ function OverviewTab() {
           flip
         >
           <p className="cp-cond-note">
-            If no, please list the titles of past work(s) and indicate the status (within three (3) years):
+            If no, please list the titles of past work(s) and indicate the
+            status (within three (3) years):
           </p>
           <div className="cp-past-grid">
             <div>
               <div className="cp-col-label">Title(s)</div>
-              <input className="cp-input" type="text" placeholder="Project title" />
+              <input
+                className="cp-input"
+                type="text"
+                placeholder="Project title"
+              />
             </div>
             <div>
               <div className="cp-col-label">Duration</div>
-              <input className="cp-input" type="text" placeholder="Duration" />
+              <input
+                className="cp-input"
+                type="text"
+                placeholder="Duration"
+              />
             </div>
             <div>
               <div className="cp-col-label">Budget</div>
-              <input className="cp-input" type="number" placeholder="Budget" />
+              <input
+                className="cp-input"
+                type="number"
+                placeholder="Budget"
+              />
             </div>
             <div>
               <div className="cp-col-label">Status</div>
               <div className="cp-select-wrap">
                 <select className="cp-select">
-                  <option value="" disabled defaultValue="">Select</option>
+                  <option value="" disabled defaultValue="">
+                    Select
+                  </option>
                   <option>Ongoing</option>
                   <option>Completed</option>
                   <option>Terminated</option>
                 </select>
-                <span className="cp-select-chevron"><ChevronDown size={14} /></span>
+                <span className="cp-select-chevron">
+                  <ChevronDown size={14} />
+                </span>
               </div>
             </div>
           </div>
@@ -340,51 +761,71 @@ function OverviewTab() {
             Additional information or comment pertinent to the scholarly work
             (e.g., relevance of proposed project to career development)
           </label>
-          <textarea className="cp-textarea" placeholder="Enter additional information..." />
+          <textarea
+            className="cp-textarea"
+            placeholder="Enter additional information..."
+          />
         </div>
       </div>
 
-      {/* Attached Images */}
+      {/* ── Attached Images ── */}
       <div className="cp-section">
         <div className="cp-section-title">Attached Images</div>
-        <FileInputRow label="Upload Supporting Images" multiple accept="image/*" />
-        <p className="cp-file-hint">Upload images related to your research proposal</p>
+        <FileInputRow
+          label="Upload Supporting Images"
+          multiple
+          accept="image/*"
+        />
+        <p className="cp-file-hint">
+          Upload images related to your research proposal
+        </p>
       </div>
+
+      {/* Evaluator Modal */}
+      {showEvalModal && (
+        <EvaluatorModal
+          onClose={() => setShowEvalModal(false)}
+          onAdd={handleAddEvaluators}
+          alreadyAdded={allAdded}
+        />
+      )}
     </>
   );
 }
 
-// Budget Tab
+// ─── Budget Tab ───────────────────────────────────────────────────────────────
 function BudgetTab() {
   const [items, setItems] = useState([
     { id: 1, category: "Personnel",   description: "Research Assistants (2 positions)", qty: 24, unitPrice: 3500 },
-    { id: 2, category: "Equipment",   description: "Laboratory Equipment Set",           qty: 1,  unitPrice: 125000 },
-    { id: 3, category: "Materials",   description: "Research Materials and Supplies",    qty: 24, unitPrice: 2500 },
-    { id: 4, category: "Travel",      description: "Field Research Travel",              qty: 12, unitPrice: 4500 },
-    { id: 5, category: "Services",    description: "Data Analysis Services",             qty: 1,  unitPrice: 35000 },
-    { id: 6, category: "Publication", description: "Journal Publication Fees",           qty: 3,  unitPrice: 2500 },
+    { id: 2, category: "Equipment",   description: "Laboratory Equipment Set",          qty: 1,  unitPrice: 125000 },
+    { id: 3, category: "Materials",   description: "Research Materials and Supplies",   qty: 24, unitPrice: 2500 },
+    { id: 4, category: "Travel",      description: "Field Research Travel",             qty: 12, unitPrice: 4500 },
+    { id: 5, category: "Services",    description: "Data Analysis Services",            qty: 1,  unitPrice: 35000 },
+    { id: 6, category: "Publication", description: "Journal Publication Fees",          qty: 3,  unitPrice: 2500 },
   ]);
 
   const total = items.reduce((sum, i) => sum + i.qty * i.unitPrice, 0);
-
   const addItem = () =>
-    setItems((p) => [...p, { id: Date.now(), category: "Personnel", description: "", qty: 1, unitPrice: 0 }]);
-
+    setItems((p) => [
+      ...p,
+      { id: Date.now(), category: "Personnel", description: "", qty: 1, unitPrice: 0 },
+    ]);
   const deleteItem = (id) => setItems((p) => p.filter((i) => i.id !== id));
-
   const fmt = (n) => "$" + n.toLocaleString();
 
   return (
     <div className="cp-section">
       <div className="cp-budget-header">
-        <div className="cp-section-title" style={{ margin: 0, border: "none", padding: 0 }}>
+        <div
+          className="cp-section-title"
+          style={{ margin: 0, border: "none", padding: 0 }}
+        >
           Budget Plan
         </div>
         <button className="create-btn" onClick={addItem}>
           <Plus size={15} /> Add Item
         </button>
       </div>
-
       <div className="table-scroll" style={{ marginTop: 16 }}>
         <table className="cp-budget-table">
           <thead>
@@ -399,20 +840,31 @@ function BudgetTab() {
           </thead>
           <tbody>
             {items.map((item) => {
-              const c = CATEGORY_COLORS[item.category] || { bg: "#f3f4f6", color: "#374151" };
+              const c = CATEGORY_COLORS[item.category] || {
+                bg: "#f3f4f6",
+                color: "#374151",
+              };
               return (
                 <tr key={item.id}>
                   <td>
-                    <span className="cp-cat-badge" style={{ background: c.bg, color: c.color }}>
+                    <span
+                      className="cp-cat-badge"
+                      style={{ background: c.bg, color: c.color }}
+                    >
                       {item.category}
                     </span>
                   </td>
                   <td>{item.description}</td>
                   <td style={{ textAlign: "right" }}>{item.qty}</td>
                   <td style={{ textAlign: "right" }}>{fmt(item.unitPrice)}</td>
-                  <td style={{ textAlign: "right", fontWeight: 600 }}>{fmt(item.qty * item.unitPrice)}</td>
+                  <td style={{ textAlign: "right", fontWeight: 600 }}>
+                    {fmt(item.qty * item.unitPrice)}
+                  </td>
                   <td>
-                    <button className="cp-delete-btn" onClick={() => deleteItem(item.id)}>
+                    <button
+                      className="cp-delete-btn"
+                      onClick={() => deleteItem(item.id)}
+                    >
                       <Trash2 size={15} />
                     </button>
                   </td>
@@ -420,10 +872,23 @@ function BudgetTab() {
               );
             })}
             <tr className="cp-total-row">
-              <td colSpan={4} style={{ textAlign: "right", fontWeight: 600, color: "#374151" }}>
+              <td
+                colSpan={4}
+                style={{
+                  textAlign: "right",
+                  fontWeight: 600,
+                  color: "#374151",
+                }}
+              >
                 Total Budget:
               </td>
-              <td style={{ textAlign: "right", fontWeight: 700, color: "#1f7a1f" }}>
+              <td
+                style={{
+                  textAlign: "right",
+                  fontWeight: 700,
+                  color: "#1f7a1f",
+                }}
+              >
                 {fmt(total)}
               </td>
               <td />
@@ -435,7 +900,7 @@ function BudgetTab() {
   );
 }
 
-// Outputs Tab
+// ─── Outputs Tab ──────────────────────────────────────────────────────────────
 function OutputsTab() {
   const [outputs, setOutputs] = useState([
     { id: 1, title: "Research Publication",  desc: "Peer-reviewed journal article in high-impact environmental science journal", target: "Month 18" },
@@ -444,21 +909,26 @@ function OutputsTab() {
   ]);
 
   const addOutput = () =>
-    setOutputs((p) => [...p, { id: Date.now(), title: "New Output", desc: "", target: "Month 0" }]);
-
-  const deleteOutput = (id) => setOutputs((p) => p.filter((o) => o.id !== id));
+    setOutputs((p) => [
+      ...p,
+      { id: Date.now(), title: "New Output", desc: "", target: "Month 0" },
+    ]);
+  const deleteOutput = (id) =>
+    setOutputs((p) => p.filter((o) => o.id !== id));
 
   return (
     <div className="cp-section">
       <div className="cp-budget-header">
-        <div className="cp-section-title" style={{ margin: 0, border: "none", padding: 0 }}>
+        <div
+          className="cp-section-title"
+          style={{ margin: 0, border: "none", padding: 0 }}
+        >
           Expected Outputs &amp; Deliverables
         </div>
         <button className="create-btn" onClick={addOutput}>
           <Plus size={15} /> Add Output
         </button>
       </div>
-
       <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 12 }}>
         {outputs.map((o) => (
           <div key={o.id} className="cp-output-card">
@@ -467,7 +937,10 @@ function OutputsTab() {
               <div className="cp-output-desc">{o.desc}</div>
               <div className="cp-output-target">Target: {o.target}</div>
             </div>
-            <button className="cp-delete-btn" onClick={() => deleteOutput(o.id)}>
+            <button
+              className="cp-delete-btn"
+              onClick={() => deleteOutput(o.id)}
+            >
               <Trash2 size={15} />
             </button>
           </div>
@@ -483,44 +956,50 @@ export default function Proposals() {
 
   const renderTab = () => {
     switch (activeTab) {
-      case "Overview":   return <OverviewTab />;
-      case "Work Plan":  return (
-        <SimpleUploadTab
-          title="Work Plan"
-          subtitle="Upload your detailed work plan document"
-          fieldLabel="Work Plan Document"
-          accept=".pdf,.doc,.docx,.xlsx"
-          note="Your work plan should include detailed activities, timelines, responsibilities, and milestones for your research project."
-        />
-      );
-      case "Budget":     return <BudgetTab />;
-      case "Framework":  return (
-        <SimpleUploadTab
-          title="Project Framework"
-          subtitle="Upload your project framework document"
-          fieldLabel="Project Framework Document"
-          accept=".pdf,.doc,.docx"
-          note="Your framework should include research objectives, success indicators, methodology, assumptions, and potential risks."
-        />
-      );
-      case "References": return (
-        <SimpleUploadTab
-          title="References and Citations"
-          subtitle="Upload your references document"
-          fieldLabel="References Document"
-          accept=".pdf,.doc,.docx"
-          note="Include all references and citations used in your research proposal in proper academic format."
-        />
-      );
-      case "Outputs":    return <OutputsTab />;
-      default:           return <OverviewTab />;
+      case "Overview":
+        return <OverviewTab />;
+      case "Work Plan":
+        return (
+          <SimpleUploadTab
+            title="Work Plan"
+            subtitle="Upload your detailed work plan document"
+            fieldLabel="Work Plan Document"
+            accept=".pdf,.doc,.docx,.xlsx"
+            note="Your work plan should include detailed activities, timelines, responsibilities, and milestones for your research project."
+          />
+        );
+      case "Budget":
+        return <BudgetTab />;
+      case "Framework":
+        return (
+          <SimpleUploadTab
+            title="Project Framework"
+            subtitle="Upload your project framework document"
+            fieldLabel="Project Framework Document"
+            accept=".pdf,.doc,.docx"
+            note="Your framework should include research objectives, success indicators, methodology, assumptions, and potential risks."
+          />
+        );
+      case "References":
+        return (
+          <SimpleUploadTab
+            title="References and Citations"
+            subtitle="Upload your references document"
+            fieldLabel="References Document"
+            accept=".pdf,.doc,.docx"
+            note="Include all references and citations used in your research proposal in proper academic format."
+          />
+        );
+      case "Outputs":
+        return <OutputsTab />;
+      default:
+        return <OverviewTab />;
     }
   };
 
   return (
     <div className="dashboard-layout">
       <Navbar />
-
       <div className="main-content">
         <Topbar title="Proposals" />
 
@@ -554,7 +1033,16 @@ export default function Proposals() {
             <button className="cp-btn">Save as Draft</button>
             <div className="cp-actions-right">
               <button className="cp-btn">Preview</button>
-              <button className="cp-btn primary" style={{ background: "#1f7a1f", borderColor: "#1f7a1f", display: "flex", alignItems: "center", gap: 7 }}>
+              <button
+                className="cp-btn primary"
+                style={{
+                  background: "#1f7a1f",
+                  borderColor: "#1f7a1f",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 7,
+                }}
+              >
                 <Send size={14} /> Submit Proposal
               </button>
             </div>

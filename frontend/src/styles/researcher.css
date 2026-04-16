@@ -2422,3 +2422,325 @@ tr:hover {
 }
 
 .notif-clear-all:hover { color: #dc2626; background: #fef2f2; }
+
+/* ══════════════════════════════════════════════════════
+   EVALUATOR ASSIGNMENT — PROPOSAL FORM
+══════════════════════════════════════════════════════ */
+
+/* Add preferred evaluator button inside section title */
+.ev-add-eval-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1f7a1f;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 7px;
+  padding: 6px 14px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s;
+}
+
+.ev-add-eval-btn:hover { background: #dcfce7; }
+
+/* Group label */
+.ev-eval-group-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0 0 10px;
+}
+
+/* Evaluator cards list */
+.ev-evaluator-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ev-evaluator-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+}
+
+.ev-evaluator-card.default   { background: #f9fafb; border-color: #e5e7eb; }
+.ev-evaluator-card.preferred { background: #faf5ff; border-color: #ede9fe; }
+
+.ev-evaluator-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #e6f4ea;
+  color: #1f7a1f;
+  font-weight: 700;
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.ev-evaluator-info { flex: 1; }
+
+.ev-evaluator-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 2px;
+}
+
+.ev-evaluator-pos {
+  font-size: 12px;
+  color: #6b7280;
+  margin: 0 0 2px;
+}
+
+.ev-evaluator-exp {
+  font-size: 12px;
+  color: #9ca3af;
+  margin: 0;
+}
+
+/* Default / Preferred badges */
+.ev-default-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 20px;
+  background: #f0fdf4;
+  color: #15803d;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.ev-preferred-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 20px;
+  background: #f5f3ff;
+  color: #7c3aed;
+  white-space: nowrap;
+}
+
+/* ══════════════════════════════════════════════════════
+   FACULTY SELECTION MODAL
+══════════════════════════════════════════════════════ */
+
+.ev-faculty-modal {
+  background: white;
+  border-radius: 14px;
+  width: 100%;
+  max-width: 620px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.18);
+  overflow: hidden;
+  padding: 24px 28px 0;
+}
+
+/* Search bar */
+.ev-faculty-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 9px 14px;
+  margin-bottom: 12px;
+  background: #fafafa;
+}
+
+.ev-faculty-search input {
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 14px;
+  flex: 1;
+  color: #111827;
+}
+
+/* Selected count pill */
+.ev-selected-count {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #7c3aed;
+  background: #f5f3ff;
+  padding: 5px 12px;
+  border-radius: 20px;
+  margin-bottom: 12px;
+  width: fit-content;
+}
+
+/* College list (scrollable) */
+.ev-college-list {
+  flex: 1;
+  overflow-y: auto;
+  margin: 0 -28px;
+  padding: 0 28px;
+}
+
+/* College accordion item */
+.ev-college-item {
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.ev-college-item:last-child { border-bottom: none; }
+
+.ev-college-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  user-select: none;
+  transition: background 0.12s;
+}
+
+.ev-college-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #1f7a1f;
+  flex-shrink: 0;
+}
+
+.ev-college-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 2px;
+}
+
+.ev-college-count {
+  font-size: 12px;
+  color: #9ca3af;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ev-college-sel-badge {
+  background: #f5f3ff;
+  color: #7c3aed;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 1px 8px;
+  border-radius: 20px;
+}
+
+/* Faculty member rows */
+.ev-faculty-list {
+  padding: 0 0 10px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ev-faculty-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #f0f0f0;
+  cursor: pointer;
+  transition: all 0.12s;
+  background: white;
+}
+
+.ev-faculty-row:hover:not(.added) {
+  border-color: #d1fae5;
+  background: #f9fafb;
+}
+
+.ev-faculty-row.selected {
+  border-color: #1f7a1f;
+  background: #f0fdf4;
+}
+
+.ev-faculty-row.added {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* Custom checkbox */
+.ev-faculty-checkbox {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  border: 2px solid #d1d5db;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 2px;
+  transition: all 0.12s;
+}
+
+.ev-faculty-checkbox.checked {
+  background: #1f7a1f;
+  border-color: #1f7a1f;
+}
+
+.ev-faculty-info { flex: 1; }
+
+.ev-faculty-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 2px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ev-faculty-pos {
+  font-size: 12px;
+  color: #6b7280;
+  margin: 0 0 1px;
+}
+
+.ev-faculty-exp {
+  font-size: 12px;
+  color: #9ca3af;
+  margin: 0;
+}
+
+.ev-already-badge {
+  font-size: 10px;
+  padding: 2px 7px;
+  border-radius: 10px;
+  background: #f3f4f6;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+/* Modal footer */
+.ev-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 16px 0;
+  border-top: 1px solid #f0f0f0;
+  margin-top: 4px;
+  background: white;
+  position: sticky;
+  bottom: 0;
+}
