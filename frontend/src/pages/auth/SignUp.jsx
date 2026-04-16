@@ -1,5 +1,5 @@
 import { useState } from "react";
-import "../styles/auth.css";
+import "../../styles/auth.css";
 import { useNavigate } from "react-router-dom";
 
 const roleThemes = {
@@ -8,13 +8,13 @@ const roleThemes = {
   approver: { color: "#d4a017", light: "#fff8dc" },
 };
 
-export default function Login() {
+export default function SignUp() {
   const [role, setRole] = useState("researcher");
   const navigate = useNavigate();
   const theme = roleThemes[role];
 
   return (
-    <div className="split-container login-page">
+    <div className="split-container signup-page">
       <div className="left-panel" />
 
       <div className="right-panel">
@@ -30,8 +30,8 @@ export default function Login() {
             <p>Project Proposal Management System</p>
           </div>
 
-          <h2>Sign In</h2>
-          <p className="subtitle">Enter your credentials to continue</p>
+          <h2>Sign Up</h2>
+          <p className="subtitle">Create your account to continue</p>
 
           <div className="form-group">
             <label>Role</label>
@@ -40,6 +40,11 @@ export default function Login() {
               <option value="evaluator">Evaluator</option>
               <option value="approver">Approver</option>
             </select>
+          </div>
+
+          <div className="form-group">
+            <label>Full Name</label>
+            <input type="text" placeholder="Juan Dela Cruz" />
           </div>
 
           <div className="form-group">
@@ -52,11 +57,16 @@ export default function Login() {
             <input type="password" placeholder="••••••••" />
           </div>
 
-          <button className="primary-btn">Sign In</button>
+          <div className="form-group">
+            <label>Confirm Password</label>
+            <input type="password" placeholder="••••••••" />
+          </div>
+
+          <button className="primary-btn">Sign Up</button>
 
           <p className="signup">
-            Don’t have an account?{" "}
-            <span onClick={() => navigate("/signup")}>Sign Up</span>
+            Already have an account?{" "}
+            <span onClick={() => navigate("/")}>Sign In</span>
           </p>
         </div>
       </div>

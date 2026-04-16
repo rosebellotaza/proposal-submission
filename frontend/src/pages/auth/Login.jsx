@@ -1,5 +1,5 @@
 import { useState } from "react";
-import "../styles/auth.css";
+import "../../styles/auth.css";
 import { useNavigate } from "react-router-dom";
 
 const roleThemes = {
@@ -8,13 +8,25 @@ const roleThemes = {
   approver: { color: "#d4a017", light: "#fff8dc" },
 };
 
-export default function SignUp() {
+export default function Login() {
   const [role, setRole] = useState("researcher");
   const navigate = useNavigate();
   const theme = roleThemes[role];
 
+  const handleSignIn = () => {
+    localStorage.setItem("role", role);
+
+    const routes = {
+      researcher: "/researcher/dashboard",
+      evaluator: "/evaluator/dashboard",
+      approver: "/approver/dashboard",
+    };
+
+    navigate(routes[role]);
+  };
+
   return (
-    <div className="split-container signup-page">
+    <div className="split-container login-page">
       <div className="left-panel" />
 
       <div className="right-panel">
@@ -30,8 +42,8 @@ export default function SignUp() {
             <p>Project Proposal Management System</p>
           </div>
 
-          <h2>Sign Up</h2>
-          <p className="subtitle">Create your account to continue</p>
+          <h2>Sign In</h2>
+          <p className="subtitle">Enter your credentials to continue</p>
 
           <div className="form-group">
             <label>Role</label>
@@ -40,11 +52,6 @@ export default function SignUp() {
               <option value="evaluator">Evaluator</option>
               <option value="approver">Approver</option>
             </select>
-          </div>
-
-          <div className="form-group">
-            <label>Full Name</label>
-            <input type="text" placeholder="Juan Dela Cruz" />
           </div>
 
           <div className="form-group">
@@ -57,16 +64,14 @@ export default function SignUp() {
             <input type="password" placeholder="••••••••" />
           </div>
 
-          <div className="form-group">
-            <label>Confirm Password</label>
-            <input type="password" placeholder="••••••••" />
-          </div>
-
-          <button className="primary-btn">Sign Up</button>
+          {/* ✅ UPDATED BUTTON */}
+          <button className="primary-btn" onClick={handleSignIn}>
+            Sign In
+          </button>
 
           <p className="signup">
-            Already have an account?{" "}
-            <span onClick={() => navigate("/")}>Sign In</span>
+            Don’t have an account?{" "}
+            <span onClick={() => navigate("/signup")}>Sign Up</span>
           </p>
         </div>
       </div>
