@@ -20,7 +20,7 @@ const TYPE_STYLES = {
   deadline:   { bg: "#fef2f2", color: "#b91c1c", dot: "#dc2626" },
 };
 
-export default function Topbar({ title = "Dashboard" }) {
+export default function Topbar({ title = "Dashboard", role = "Researcher", userName = "Rosebellaaa" }) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [notifications, setNotifications] = useState(NOTIFICATIONS);
@@ -147,10 +147,10 @@ export default function Topbar({ title = "Dashboard" }) {
             onClick={() => { setDropdownOpen(!dropdownOpen); setNotifOpen(false); }}
           >
             <div className="user-text">
-              <strong>Rosebellaaa</strong>
-              <small>Researcher</small>
+                <strong>{userName}</strong>
+                <small>{role}</small>
             </div>
-            <div className="avatar-circle">
+            <div className="avatar-circle" style={{ background: role === "Evaluator" ? "#7c3aed" : "#1f7a1f" }}>
               <User size={18} color="white" />
             </div>
           </div>
@@ -158,8 +158,8 @@ export default function Topbar({ title = "Dashboard" }) {
           {dropdownOpen && (
             <div className="user-dropdown">
               <div className="dropdown-header">
-                <strong>Rosebellaaa</strong>
-                <small>Researcher</small>
+                <strong>{userName}</strong>
+                <small>{role}</small>
               </div>
               <hr />
               <button className="dropdown-item logout" onClick={handleLogout}>

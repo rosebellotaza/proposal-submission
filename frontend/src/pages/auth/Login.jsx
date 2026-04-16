@@ -18,9 +18,9 @@ export default function Login() {
   const handleSignIn = () => {
     localStorage.setItem("role", role);
     const routes = {
-      researcher: "/researcher/dashboard",
-      evaluator: "/evaluator/dashboard",
-    };
+        researcher: "/researcher/dashboard",
+        evaluator:  "/evaluator/dashboard",
+      };
     navigate(routes[role]);
   };
 
