@@ -1,63 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Search, Filter, Plus, ChevronDown } from "lucide-react";
 import Navbar from "../../components/researcher/Navbar";
 import Topbar from "../../components/Topbar";
 import "../../styles/researcher.css";
 import { useNavigate } from "react-router-dom";
-
-
-const projects = [
-  {
-    id: "PRJ-001",
-    title: "Climate Change Impact on Coastal Ecosystems",
-    type: "Basic Research",
-    department: "Environmental Science",
-    leader: "Dr. Sarah Johnson",
-    budget: "$450,000",
-    duration: "24 months",
-    status: "Approved",
-  },
-  {
-    id: "PRJ-002",
-    title: "AI-Driven Healthcare Diagnosis System",
-    type: "Applied Research",
-    department: "Computer Science",
-    leader: "Prof. Michael Chen",
-    budget: "$320,000",
-    duration: "18 months",
-    status: "Under Evaluation",
-  },
-  {
-    id: "PRJ-003",
-    title: "Sustainable Agriculture Practices in Arid Regions",
-    type: "Applied Research",
-    department: "Agriculture",
-    leader: "Dr. Emily Rodriguez",
-    budget: "$280,000",
-    duration: "36 months",
-    status: "In Progress",
-  },
-  {
-    id: "PRJ-004",
-    title: "Quantum Computing for Cryptography",
-    type: "Basic Research",
-    department: "Physics",
-    leader: "Dr. James Anderson",
-    budget: "$580,000",
-    duration: "30 months",
-    status: "Submitted",
-  },
-  {
-    id: "PRJ-005",
-    title: "Urban Planning and Smart City Infrastructure",
-    type: "Development",
-    department: "Civil Engineering",
-    leader: "Prof. Lisa Martinez",
-    budget: "$750,000",
-    duration: "48 months",
-    status: "Draft",
-  },
-];
+import api from "../../utils/api";
 
 const statusClass = {
   "Approved":         "approved",
@@ -68,15 +15,23 @@ const statusClass = {
 };
 
 export default function ResearchProjects() {
-  const [query, setQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState("All Status");
+  const [projects,      setProjects]      = useState([]);
+  const [query,         setQuery]         = useState("");
+  const [statusFilter,  setStatusFilter]  = useState("All Status");
+  const [loading,       setLoading]       = useState(true);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    api.get("/projects")
+      .then((res) => setProjects(res.data))
+      .catch((err) => console.error(err))
+      .finally(() => setLoading(false));
+  }, []);
 
   const filtered = projects.filter((p) => {
     const matchQuery =
       p.title.toLowerCase().includes(query.toLowerCase()) ||
-      p.department.toLowerCase().includes(query.toLowerCase()) ||
-      p.leader.toLowerCase().includes(query.toLowerCase());
+      (p.department_center?.name || "").toLowerCase().includes(query.toLowerCase());
     const matchStatus =
       statusFilter === "All Status" || p.status === statusFilter;
     return matchQuery && matchStatus;
@@ -85,10 +40,8 @@ export default function ResearchProjects() {
   return (
     <div className="dashboard-layout">
       <Navbar />
-
       <div className="main-content">
         <Topbar title="Research Projects" />
-
         <div className="dashboard-content">
 
           {/* PAGE HEADER */}
@@ -98,8 +51,7 @@ export default function ResearchProjects() {
               <p className="page-subtitle">Manage and track all research projects</p>
             </div>
             <button className="create-btn" onClick={() => navigate("/researcher/projects/create")}>
-              <Plus size={16} />
-              Create Project
+              <Plus size={16} /> Create Project
             </button>
           </div>
 
@@ -109,7 +61,7 @@ export default function ResearchProjects() {
               <Search size={18} color="#9ca3af" />
               <input
                 type="text"
-                placeholder="Search by title, department, or leader..."
+                placeholder="Search by title or department..."
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
               />
@@ -134,37 +86,30 @@ export default function ResearchProjects() {
 
           {/* TABLE */}
           <div className="table-wrapper">
-            <h4 className="table-title">Projects ({filtered.length})</h4>
-
+            <h4 className="table-title">
+              {loading ? "Loading..." : `Projects (${filtered.length})`}
+            </h4>
             <div className="table-scroll">
               <table>
                 <thead>
                   <tr>
-                    <th>Project ID</th>
+                    <th>Reference No</th>
                     <th>Title</th>
-                    <th>Department</th>
-                    <th>Leader</th>
+                    <th>Type</th>
                     <th>Budget</th>
-                    <th>Duration</th>
                     <th>Status</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
-
                 <tbody>
                   {filtered.map((p) => (
                     <tr key={p.id}>
-                      <td>{p.id}</td>
+                      <td>{p.reference_no}</td>
+                      <td><strong>{p.title}</strong></td>
+                      <td>{p.type}</td>
+                      <td>{p.budget ? `₱${Number(p.budget).toLocaleString()}` : "—"}</td>
                       <td>
-                        <strong>{p.title}</strong>
-                        <div className="sub">{p.type}</div>
-                      </td>
-                      <td>{p.department}</td>
-                      <td>{p.leader}</td>
-                      <td>{p.budget}</td>
-                      <td>{p.duration}</td>
-                      <td>
-                        <span className={`badge ${statusClass[p.status]}`}>
+                        <span className={`badge ${statusClass[p.status] || "draft"}`}>
                           {p.status}
                         </span>
                       </td>
@@ -175,6 +120,13 @@ export default function ResearchProjects() {
                       </td>
                     </tr>
                   ))}
+                  {!loading && filtered.length === 0 && (
+                    <tr>
+                      <td colSpan={6} style={{ textAlign: "center", color: "#9ca3af", padding: 24 }}>
+                        No projects found. Create your first project!
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>

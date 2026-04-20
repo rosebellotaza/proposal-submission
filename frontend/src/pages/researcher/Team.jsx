@@ -1,31 +1,38 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Plus, Mail, Pencil, Trash2 } from "lucide-react";
 import Navbar from "../../components/researcher/Navbar";
 import Topbar from "../../components/Topbar";
 import "../../styles/researcher.css";
-
-const INITIAL_MEMBERS = [
-  { id: 1, name: "Dr. Sarah Johnson",  email: "sarah.johnson@university.edu",  department: "Environmental Science", role: "Leader" },
-  { id: 2, name: "Dr. Mark Thompson",  email: "mark.thompson@university.edu",  department: "Marine Biology",        role: "Co-Leader" },
-  { id: 3, name: "Dr. Rachel Lee",     email: "rachel.lee@university.edu",     department: "Environmental Science", role: "Member" },
-  { id: 4, name: "John Davis",         email: "john.davis@university.edu",     department: "Data Analytics",        role: "Member" },
-];
+import api from "../../utils/api";
 
 const ROLE_STYLES = {
-  Leader:    { bg: "#dcfce7", color: "#15803d" },
+  Leader:      { bg: "#dcfce7", color: "#15803d" },
   "Co-Leader": { bg: "#dbeafe", color: "#1d4ed8" },
-  Member:    { bg: "#f3f4f6", color: "#6b7280" },
+  Member:      { bg: "#f3f4f6", color: "#6b7280" },
 };
 
 export default function TeamManagement() {
-  const [members, setMembers] = useState(INITIAL_MEMBERS);
-  const [showModal, setShowModal] = useState(false);
-  const [editingMember, setEditingMember] = useState(null);
-  const [form, setForm] = useState({ name: "", email: "", department: "", role: "Member" });
+  const [projects,       setProjects]       = useState([]);
+  const [selectedProject, setSelectedProject] = useState("");
+  const [members,        setMembers]        = useState([]);
+  const [showModal,      setShowModal]      = useState(false);
+  const [editingMember,  setEditingMember]  = useState(null);
+  const [form,           setForm]           = useState({ name: "", email: "", department: "", role: "Member" });
+  const [loading,        setLoading]        = useState(false);
 
-  const totalMembers = members.length;
-  const projectLeaders = members.filter((m) => m.role === "Leader").length;
-  const departments = new Set(members.map((m) => m.department)).size;
+  // Load researcher's projects
+  useEffect(() => {
+    api.get("/projects").then((res) => {
+      setProjects(res.data);
+      if (res.data.length > 0) setSelectedProject(res.data[0].id);
+    });
+  }, []);
+
+  // Load team when project changes
+  useEffect(() => {
+    if (!selectedProject) return;
+    api.get(`/projects/${selectedProject}/team`).then((res) => setMembers(res.data));
+  }, [selectedProject]);
 
   const openAdd = () => {
     setEditingMember(null);
@@ -34,30 +41,45 @@ export default function TeamManagement() {
   };
 
   const openEdit = (member) => {
-    setEditingMember(member.id);
+    setEditingMember(member);
     setForm({ name: member.name, email: member.email, department: member.department, role: member.role });
     setShowModal(true);
   };
 
-  const handleDelete = (id) => setMembers((p) => p.filter((m) => m.id !== id));
-
-  const handleSave = () => {
-    if (!form.name || !form.email || !form.department) return;
-    if (editingMember) {
-      setMembers((p) => p.map((m) => m.id === editingMember ? { ...m, ...form } : m));
-    } else {
-      setMembers((p) => [...p, { id: Date.now(), ...form }]);
-    }
-    setShowModal(false);
+  const handleDelete = async (id) => {
+    await api.delete(`/projects/${selectedProject}/team/${id}`);
+    setMembers((p) => p.filter((m) => m.id !== id));
   };
+
+  const handleSave = async () => {
+    if (!form.name || !form.email) return;
+    setLoading(true);
+    try {
+      if (editingMember) {
+        const res = await api.put(`/projects/${selectedProject}/team/${editingMember.id}`, { role: form.role });
+        setMembers((p) => p.map((m) => m.id === editingMember.id ? { ...m, role: res.data.role } : m));
+      } else {
+        // For adding, we need to find the personnel by email first
+        // For now just refresh the team list
+        await api.get(`/projects/${selectedProject}/team`).then((res) => setMembers(res.data));
+      }
+      setShowModal(false);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const totalMembers   = members.length;
+  const projectLeaders = members.filter((m) => m.role === "Leader").length;
+  const departments    = new Set(members.map((m) => m.department)).size;
 
   return (
     <div className="dashboard-layout">
       <Navbar />
-
       <div className="main-content">
         <Topbar title="Team Management" />
-
         <div className="dashboard-content">
 
           {/* Page Header */}
@@ -70,6 +92,29 @@ export default function TeamManagement() {
               <Plus size={16} /> Add Team Member
             </button>
           </div>
+
+          {/* Project Selector */}
+          {projects.length > 0 && (
+            <div className="cp-section" style={{ marginBottom: 16 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                <label style={{ fontSize: 14, fontWeight: 600, color: "#374151", whiteSpace: "nowrap" }}>
+                  Select Project:
+                </label>
+                <div className="cp-select-wrap" style={{ flex: 1 }}>
+                  <select
+                    className="cp-select"
+                    value={selectedProject}
+                    onChange={(e) => setSelectedProject(e.target.value)}
+                  >
+                    {projects.map((p) => (
+                      <option key={p.id} value={p.id}>{p.reference_no} — {p.title}</option>
+                    ))}
+                  </select>
+                  <span className="cp-select-chevron">▾</span>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Table */}
           <div className="table-wrapper">
@@ -109,28 +154,28 @@ export default function TeamManagement() {
                         </td>
                         <td>{m.department}</td>
                         <td>
-                          <span
-                            className="badge"
-                            style={{ background: rs.bg, color: rs.color }}
-                          >
+                          <span className="badge" style={{ background: rs.bg, color: rs.color }}>
                             {m.role}
                           </span>
                         </td>
                         <td>
                           <div className="actions" style={{ justifyContent: "flex-end" }}>
-                            <span className="edit" onClick={() => openEdit(m)}>
-                              Edit
-                            </span>
-                            <Trash2
-                              size={16}
-                              className="delete"
-                              onClick={() => handleDelete(m.id)}
-                            />
+                            <span className="edit" onClick={() => openEdit(m)}>Edit</span>
+                            {m.role !== "Leader" && (
+                              <Trash2 size={16} className="delete" onClick={() => handleDelete(m.id)} />
+                            )}
                           </div>
                         </td>
                       </tr>
                     );
                   })}
+                  {members.length === 0 && (
+                    <tr>
+                      <td colSpan={5} style={{ textAlign: "center", color: "#9ca3af", padding: 24 }}>
+                        No team members yet.
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>
@@ -163,64 +208,36 @@ export default function TeamManagement() {
               {editingMember ? "Edit Team Member" : "Add Team Member"}
             </h3>
 
-            <div className="cp-field">
-              <label className="cp-label">Full Name *</label>
-              <input
-                className="cp-input"
-                type="text"
-                placeholder="e.g., Dr. Sarah Johnson"
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-              />
-            </div>
-
-            <div className="cp-field">
-              <label className="cp-label">Email *</label>
-              <input
-                className="cp-input"
-                type="email"
-                placeholder="name@university.edu"
-                value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
-              />
-            </div>
-
-            <div className="cp-field">
-              <label className="cp-label">Department *</label>
-              <input
-                className="cp-input"
-                type="text"
-                placeholder="e.g., Computer Science"
-                value={form.department}
-                onChange={(e) => setForm({ ...form, department: e.target.value })}
-              />
-            </div>
-
-            <div className="cp-field">
-              <label className="cp-label">Role *</label>
-              <div className="cp-select-wrap">
-                <select
-                  className="cp-select"
-                  value={form.role}
-                  onChange={(e) => setForm({ ...form, role: e.target.value })}
-                >
-                  <option>Leader</option>
-                  <option>Co-Leader</option>
-                  <option>Member</option>
-                </select>
-                <span className="cp-select-chevron">▾</span>
+            {editingMember ? (
+              <div className="cp-field">
+                <label className="cp-label">Role *</label>
+                <div className="cp-select-wrap">
+                  <select className="cp-select" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}>
+                    <option>Leader</option>
+                    <option>Co-Leader</option>
+                    <option>Member</option>
+                  </select>
+                  <span className="cp-select-chevron">▾</span>
+                </div>
               </div>
-            </div>
+            ) : (
+              <p style={{ fontSize: 13, color: "#6b7280" }}>
+                To add a team member, the person must first register an account in the system. Then you can assign them here by their personnel ID.
+              </p>
+            )}
 
             <div className="tm-modal-actions">
               <button className="cp-btn" onClick={() => setShowModal(false)}>Cancel</button>
-              <button
-                className="cp-btn primary"
-                style={{ background: "#1f7a1f", borderColor: "#1f7a1f" }}
-                onClick={handleSave}
-              >
-                {editingMember ? "Save Changes" : "Add Member"}
-              </button>
+              {editingMember && (
+                <button
+                  className="cp-btn primary"
+                  style={{ background: "#1f7a1f", borderColor: "#1f7a1f" }}
+                  onClick={handleSave}
+                  disabled={loading}
+                >
+                  {loading ? "Saving..." : "Save Changes"}
+                </button>
+              )}
             </div>
           </div>
         </div>

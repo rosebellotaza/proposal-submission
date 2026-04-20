@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { LogIn } from "lucide-react";
 import logo from "../../assets/logo.png";
 import schoolBg from "../../assets/school.png";
-import { findUser, setSession, dashboardRoute } from "../../utils/auth";
+import { loginUser, dashboardRoute } from "../../utils/auth";
 
 const roleThemes = {
   researcher: { color: "#1a6b1a", light: "#e6f4ea" },
@@ -16,10 +16,11 @@ export default function Login() {
   const [email,    setEmail]    = useState("");
   const [password, setPassword] = useState("");
   const [error,    setError]    = useState("");
+  const [loading,  setLoading]  = useState(false);
   const navigate = useNavigate();
   const theme = roleThemes[role];
 
-  const handleSignIn = () => {
+  const handleSignIn = async () => {
     setError("");
 
     if (!email || !password) {
@@ -27,21 +28,19 @@ export default function Login() {
       return;
     }
 
-    const user = findUser(email);
-
-    // If no registered user found, allow login with entered email as name
-    // (demo mode — in production you'd reject unknown users)
-    const sessionUser = user
-      ? user
-      : { name: email.split("@")[0], email, role };
-
-    if (sessionUser.role !== role) {
-      setError(`This account is registered as a ${sessionUser.role}, not ${role}.`);
-      return;
+    setLoading(true);
+    try {
+      const user = await loginUser(email, password, role);
+      navigate(dashboardRoute(user.role));
+    } catch (err) {
+      const msg = err.response?.data?.message
+        || err.response?.data?.errors?.email?.[0]
+        || err.response?.data?.errors?.role?.[0]
+        || "Login failed. Please try again.";
+      setError(msg);
+    } finally {
+      setLoading(false);
     }
-
-    setSession(sessionUser);
-    navigate(dashboardRoute(role));
   };
 
   return (
@@ -50,7 +49,7 @@ export default function Login() {
         className="auth-card"
         style={{ "--main-color": theme.color, "--light-color": theme.light }}
       >
-        {/* Green Header */}
+        {/* Header */}
         <div className="card-header">
           <img src={logo} alt="CSU Logo" className="school-logo" />
           <h1 className="school-name">Research PMS</h1>
@@ -66,9 +65,7 @@ export default function Login() {
           <h2>Welcome Back</h2>
           <p className="subtitle">Sign in to continue to your account</p>
 
-          {error && (
-            <div className="auth-error">{error}</div>
-          )}
+          {error && <div className="auth-error">{error}</div>}
 
           <div className="form-group">
             <label>Select Role</label>
@@ -103,9 +100,9 @@ export default function Login() {
             />
           </div>
 
-          <button className="primary-btn" onClick={handleSignIn}>
+          <button className="primary-btn" onClick={handleSignIn} disabled={loading}>
             <LogIn size={18} />
-            Sign In
+            {loading ? "Signing in..." : "Sign In"}
           </button>
 
           <p className="auth-link">

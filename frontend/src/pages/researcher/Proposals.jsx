@@ -1,21 +1,13 @@
 import { useState, useRef, useEffect } from "react";
 import {
-  ChevronDown, Upload, Check, Plus, Trash2, FileText, Send,
+  ChevronDown, Upload, Check, Plus, Trash2, Send,
   Users, Search, X, CheckCircle2, UserCheck, ChevronRight,
 } from "lucide-react";
 import Navbar from "../../components/researcher/Navbar";
 import Topbar from "../../components/Topbar";
 import "../../styles/researcher.css";
 import { FACULTY_BY_COLLEGE, DEFAULT_EVALUATORS } from "../../data/faculty";
-
-// ─── Data ─────────────────────────────────────────────────────────────────────
-const TEAM_MEMBERS = [
-  { id: 1, name: "Dr. Sarah Johnson",  dept: "Environmental Science" },
-  { id: 2, name: "Dr. Mark Thompson",  dept: "Marine Biology" },
-  { id: 3, name: "Dr. Rachel Lee",     dept: "Environmental Science" },
-  { id: 4, name: "John Davis",         dept: "Data Analytics" },
-  { id: 5, name: "Prof. Elena Cruz",   dept: "Biochemistry" },
-];
+import api from "../../utils/api";
 
 const TABS = ["Overview", "Work Plan", "Budget", "Framework", "References", "Outputs"];
 
@@ -28,16 +20,14 @@ const CATEGORY_COLORS = {
   Publication: { bg: "#fdf2f8", color: "#9d174d" },
 };
 
-// ─── Evaluator Assignment Modal ───────────────────────────────────────────────
+// ─── Evaluator Modal ──────────────────────────────────────────────────────────
 function EvaluatorModal({ onClose, onAdd, alreadyAdded }) {
-  const [search,          setSearch]          = useState("");
-  const [openCollege,     setOpenCollege]      = useState(null);
+  const [search, setSearch] = useState("");
+  const [openCollege, setOpenCollege] = useState(null);
   const [selectedFaculty, setSelectedFaculty] = useState([]);
-
   const colleges = Object.keys(FACULTY_BY_COLLEGE);
 
   const toggleCollege = (c) => setOpenCollege(openCollege === c ? null : c);
-
   const toggleSelect = (member, college) => {
     const key = member.id;
     if (selectedFaculty.find((f) => f.id === key)) {
@@ -46,282 +36,102 @@ function EvaluatorModal({ onClose, onAdd, alreadyAdded }) {
       setSelectedFaculty((p) => [...p, { ...member, college }]);
     }
   };
-
-  const isAlreadyAdded = (id) =>
-    alreadyAdded.some((f) => f.id === id);
-
-  const isSelected = (id) =>
-    selectedFaculty.some((f) => f.id === id);
+  const isAlreadyAdded = (id) => alreadyAdded.some((f) => f.id === id);
+  const isSelected = (id) => selectedFaculty.some((f) => f.id === id);
 
   const filteredColleges = colleges.filter((college) => {
     if (!search) return true;
     const lc = search.toLowerCase();
-    return (
-      college.toLowerCase().includes(lc) ||
-      FACULTY_BY_COLLEGE[college].some(
-        (f) =>
-          f.name.toLowerCase().includes(lc) ||
-          f.expertise.toLowerCase().includes(lc)
-      )
-    );
+    return college.toLowerCase().includes(lc) ||
+      FACULTY_BY_COLLEGE[college].some((f) =>
+        f.name.toLowerCase().includes(lc) || f.expertise.toLowerCase().includes(lc)
+      );
   });
 
   const getFilteredMembers = (college) => {
     if (!search) return FACULTY_BY_COLLEGE[college];
     const lc = search.toLowerCase();
-    return FACULTY_BY_COLLEGE[college].filter(
-      (f) =>
-        f.name.toLowerCase().includes(lc) ||
-        f.expertise.toLowerCase().includes(lc) ||
-        college.toLowerCase().includes(lc)
+    return FACULTY_BY_COLLEGE[college].filter((f) =>
+      f.name.toLowerCase().includes(lc) || f.expertise.toLowerCase().includes(lc) || college.toLowerCase().includes(lc)
     );
-  };
-
-  const handleConfirm = () => {
-    if (selectedFaculty.length === 0) return;
-    onAdd(selectedFaculty);
-    onClose();
   };
 
   return (
     <div className="tm-modal-overlay" onClick={onClose}>
-      <div
-        className="ev-faculty-modal"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
+      <div className="ev-faculty-modal" onClick={(e) => e.stopPropagation()}>
         <div className="tm-modal-header">
           <div>
             <h3 className="tm-modal-title">Select Preferred Evaluators</h3>
-            <p className="tm-modal-subtitle">
-              Browse faculty by college and select your preferred evaluators
-            </p>
+            <p className="tm-modal-subtitle">Browse faculty by college and select your preferred evaluators</p>
           </div>
-          <button className="tm-modal-close" onClick={onClose}>
-            <X size={16} />
-          </button>
+          <button className="tm-modal-close" onClick={onClose}><X size={16} /></button>
         </div>
-
-        {/* Search */}
         <div className="ev-faculty-search">
           <Search size={16} color="#9ca3af" />
-          <input
-            type="text"
-            placeholder="Search by name, college, or expertise..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            autoFocus
-          />
-          {search && (
-            <button
-              style={{
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-                color: "#9ca3af",
-              }}
-              onClick={() => setSearch("")}
-            >
-              <X size={14} />
-            </button>
-          )}
+          <input type="text" placeholder="Search by name, college, or expertise..."
+            value={search} onChange={(e) => setSearch(e.target.value)} autoFocus />
+          {search && <button style={{ background: "none", border: "none", cursor: "pointer", color: "#9ca3af" }} onClick={() => setSearch("")}><X size={14} /></button>}
         </div>
-
-        {/* Selected count */}
         {selectedFaculty.length > 0 && (
           <div className="ev-selected-count">
             <CheckCircle2 size={14} color="#7c3aed" />
-            <span>
-              {selectedFaculty.length} faculty selected
-            </span>
+            <span>{selectedFaculty.length} faculty selected</span>
           </div>
         )}
-
-        {/* College accordion */}
         <div className="ev-college-list">
-          {filteredColleges.length === 0 ? (
-            <div
-              style={{
-                textAlign: "center",
-                padding: "32px",
-                color: "#9ca3af",
-                fontSize: 14,
-              }}
-            >
-              No results found for "{search}"
-            </div>
-          ) : (
-            filteredColleges.map((college) => {
-              const members    = getFilteredMembers(college);
-              const isOpen     = openCollege === college || !!search;
-              const selCount   = members.filter((m) => isSelected(m.id)).length;
-
-              return (
-                <div key={college} className="ev-college-item">
-                  {/* College header */}
-                  <div
-                    className="ev-college-header"
-                    onClick={() => !search && toggleCollege(college)}
-                    style={{ cursor: search ? "default" : "pointer" }}
-                  >
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 10,
-                      }}
-                    >
-                      <div className="ev-college-dot" />
-                      <div>
-                        <p className="ev-college-name">{college}</p>
-                        <p className="ev-college-count">
-                          {members.length} faculty member
-                          {members.length !== 1 ? "s" : ""}
-                          {selCount > 0 && (
-                            <span className="ev-college-sel-badge">
-                              {selCount} selected
-                            </span>
-                          )}
-                        </p>
-                      </div>
+          {filteredColleges.map((college) => {
+            const members = getFilteredMembers(college);
+            const isOpen = openCollege === college || !!search;
+            const selCount = members.filter((m) => isSelected(m.id)).length;
+            return (
+              <div key={college} className="ev-college-item">
+                <div className="ev-college-header" onClick={() => !search && toggleCollege(college)} style={{ cursor: search ? "default" : "pointer" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <div className="ev-college-dot" />
+                    <div>
+                      <p className="ev-college-name">{college}</p>
+                      <p className="ev-college-count">{members.length} faculty member{members.length !== 1 ? "s" : ""}
+                        {selCount > 0 && <span className="ev-college-sel-badge">{selCount} selected</span>}
+                      </p>
                     </div>
-                    {!search && (
-                      <ChevronRight
-                        size={16}
-                        color="#9ca3af"
-                        style={{
-                          transform: isOpen ? "rotate(90deg)" : "rotate(0)",
-                          transition: "transform 0.2s",
-                        }}
-                      />
-                    )}
                   </div>
-
-                  {/* Faculty members */}
-                  {(isOpen || search) && members.length > 0 && (
-                    <div className="ev-faculty-list">
-                      {members.map((member) => {
-                        const added    = isAlreadyAdded(member.id);
-                        const selected = isSelected(member.id);
-                        return (
-                          <div
-                            key={member.id}
-                            className={`ev-faculty-row ${selected ? "selected" : ""} ${added ? "added" : ""}`}
-                            onClick={() =>
-                              !added && toggleSelect(member, college)
-                            }
-                          >
-                            <div
-                              className={`ev-faculty-checkbox ${selected ? "checked" : ""}`}
-                            >
-                              {selected && (
-                                <Check size={11} color="white" />
-                              )}
-                            </div>
-                            <div className="ev-faculty-info">
-                              <p className="ev-faculty-name">
-                                {member.name}
-                                {added && (
-                                  <span className="ev-already-badge">
-                                    Already added
-                                  </span>
-                                )}
-                              </p>
-                              <p className="ev-faculty-pos">
-                                {member.position}
-                              </p>
-                              <p className="ev-faculty-exp">
-                                {member.expertise}
-                              </p>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
+                  {!search && <ChevronRight size={16} color="#9ca3af" style={{ transform: isOpen ? "rotate(90deg)" : "rotate(0)", transition: "transform 0.2s" }} />}
                 </div>
-              );
-            })
-          )}
+                {(isOpen || search) && members.length > 0 && (
+                  <div className="ev-faculty-list">
+                    {members.map((member) => {
+                      const added = isAlreadyAdded(member.id);
+                      const selected = isSelected(member.id);
+                      return (
+                        <div key={member.id} className={`ev-faculty-row ${selected ? "selected" : ""} ${added ? "added" : ""}`}
+                          onClick={() => !added && toggleSelect(member, college)}>
+                          <div className={`ev-faculty-checkbox ${selected ? "checked" : ""}`}>
+                            {selected && <Check size={11} color="white" />}
+                          </div>
+                          <div className="ev-faculty-info">
+                            <p className="ev-faculty-name">{member.name}{added && <span className="ev-already-badge">Already added</span>}</p>
+                            <p className="ev-faculty-pos">{member.position}</p>
+                            <p className="ev-faculty-exp">{member.expertise}</p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
-
-        {/* Footer */}
         <div className="ev-modal-footer">
-          <button className="cp-btn" onClick={onClose}>
-            Cancel
-          </button>
-          <button
-            className="cp-btn primary"
-            style={{
-              background: "#1f7a1f",
-              borderColor: "#1f7a1f",
-              opacity: selectedFaculty.length === 0 ? 0.5 : 1,
-              cursor: selectedFaculty.length === 0 ? "not-allowed" : "pointer",
-            }}
-            onClick={handleConfirm}
-            disabled={selectedFaculty.length === 0}
-          >
-            Add {selectedFaculty.length > 0 ? `(${selectedFaculty.length})` : ""} Evaluator
-            {selectedFaculty.length !== 1 ? "s" : ""}
+          <button className="cp-btn" onClick={onClose}>Cancel</button>
+          <button className="cp-btn primary"
+            style={{ background: "#1f7a1f", borderColor: "#1f7a1f", opacity: selectedFaculty.length === 0 ? 0.5 : 1 }}
+            onClick={() => { if (selectedFaculty.length > 0) { onAdd(selectedFaculty); onClose(); } }}
+            disabled={selectedFaculty.length === 0}>
+            Add {selectedFaculty.length > 0 ? `(${selectedFaculty.length})` : ""} Evaluator{selectedFaculty.length !== 1 ? "s" : ""}
           </button>
         </div>
       </div>
-    </div>
-  );
-}
-
-// ─── ComboBox ─────────────────────────────────────────────────────────────────
-function ComboBox({ value, onChange, options, placeholder }) {
-  const [open,  setOpen]  = useState(false);
-  const [query, setQuery] = useState(value || "");
-  const wrapRef = useRef(null);
-  const filtered = options.filter((o) =>
-    o.toLowerCase().includes(query.toLowerCase())
-  );
-
-  useEffect(() => {
-    const h = (e) => {
-      if (wrapRef.current && !wrapRef.current.contains(e.target))
-        setOpen(false);
-    };
-    document.addEventListener("mousedown", h);
-    return () => document.removeEventListener("mousedown", h);
-  }, []);
-
-  return (
-    <div className="cp-combo-wrap" ref={wrapRef}>
-      <input
-        className="cp-input"
-        type="text"
-        value={query}
-        placeholder={placeholder}
-        onChange={(e) => {
-          setQuery(e.target.value);
-          onChange(e.target.value);
-          setOpen(true);
-        }}
-        onFocus={() => setOpen(true)}
-      />
-      <span className="cp-combo-chevron">
-        <ChevronDown size={14} />
-      </span>
-      {open && filtered.length > 0 && (
-        <div className="cp-dropdown">
-          {filtered.map((opt) => (
-            <div
-              key={opt}
-              className="cp-dropdown-item"
-              onMouseDown={() => {
-                setQuery(opt);
-                onChange(opt);
-                setOpen(false);
-              }}
-            >
-              {opt}
-            </div>
-          ))}
-        </div>
-      )}
     </div>
   );
 }
@@ -332,34 +142,13 @@ function FileInputRow({ label, required, multiple, accept }) {
   const ref = useRef(null);
   return (
     <div className="cp-field">
-      <label className="cp-label">
-        {label} {required && "*"}
-      </label>
+      <label className="cp-label">{label} {required && "*"}</label>
       <div className="cp-file-row">
-        <button className="cp-file-btn" onClick={() => ref.current.click()}>
-          Choose {multiple ? "Files" : "File"}
-        </button>
-        <span className="cp-file-name">
-          {files.length === 0
-            ? "No file chosen"
-            : files.length === 1
-            ? files[0].name
-            : `${files.length} files selected`}
-        </span>
-        <button
-          className="cp-file-upload-icon"
-          onClick={() => ref.current.click()}
-        >
-          <Upload size={16} color="#6b7280" />
-        </button>
-        <input
-          ref={ref}
-          type="file"
-          multiple={multiple}
-          accept={accept}
-          style={{ display: "none" }}
-          onChange={(e) => setFiles(Array.from(e.target.files))}
-        />
+        <button className="cp-file-btn" onClick={() => ref.current.click()}>Choose {multiple ? "Files" : "File"}</button>
+        <span className="cp-file-name">{files.length === 0 ? "No file chosen" : files.length === 1 ? files[0].name : `${files.length} files selected`}</span>
+        <button className="cp-file-upload-icon" onClick={() => ref.current.click()}><Upload size={16} color="#6b7280" /></button>
+        <input ref={ref} type="file" multiple={multiple} accept={accept} style={{ display: "none" }}
+          onChange={(e) => setFiles(Array.from(e.target.files))} />
       </div>
     </div>
   );
@@ -369,425 +158,183 @@ function FileInputRow({ label, required, multiple, accept }) {
 function SimpleUploadTab({ title, subtitle, fieldLabel, note, accept }) {
   return (
     <div className="cp-section">
-      <div
-        className="cp-section-title"
-        style={{ borderBottom: "none", marginBottom: 4 }}
-      >
-        {title}
-      </div>
-      <p style={{ fontSize: 13, color: "#6b7280", margin: "0 0 20px" }}>
-        {subtitle}
-      </p>
+      <div className="cp-section-title" style={{ borderBottom: "none", marginBottom: 4 }}>{title}</div>
+      <p style={{ fontSize: 13, color: "#6b7280", margin: "0 0 20px" }}>{subtitle}</p>
       <FileInputRow label={fieldLabel} required accept={accept} />
-      {note && (
-        <div className="cp-note-box">
-          <strong>Note:</strong> {note}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ─── Conditional Question ─────────────────────────────────────────────────────
-function ConditionalQuestion({ question, name, flip = false, children }) {
-  const [answer, setAnswer] = useState(null);
-  const show = flip ? answer === "no" : answer === "yes";
-  return (
-    <div className="cp-q-block">
-      <p className="cp-q-text">{question}</p>
-      <div className="cp-radio-row">
-        {["yes", "no"].map((v) => (
-          <label key={v} className="cp-radio-label">
-            <input
-              type="radio"
-              name={name}
-              value={v}
-              checked={answer === v}
-              onChange={() => setAnswer(v)}
-            />
-            {v === "yes" ? "Yes" : "No"}
-          </label>
-        ))}
-      </div>
-      {show && <div className="cp-cond-box">{children}</div>}
+      {note && <div className="cp-note-box"><strong>Note:</strong> {note}</div>}
     </div>
   );
 }
 
 // ─── Overview Tab ─────────────────────────────────────────────────────────────
-function OverviewTab() {
-  const [leader,          setLeader]          = useState("");
-  const [selectedMembers, setSelectedMembers] = useState([]);
-
-  // Evaluators
+function OverviewTab({ form, setForm, projects }) {
   const [preferredEvaluators, setPreferredEvaluators] = useState([]);
-  const [showEvalModal,       setShowEvalModal]        = useState(false);
-
-  // Auto-assigned defaults
-  const defaultEvaluators = DEFAULT_EVALUATORS;
-
-  const allAdded = [
-    ...defaultEvaluators,
-    ...preferredEvaluators,
-  ];
-
-  const toggleMember = (id) =>
-    setSelectedMembers((p) =>
-      p.includes(id) ? p.filter((m) => m !== id) : [...p, id]
-    );
-
-  const removePreferred = (id) =>
-    setPreferredEvaluators((p) => p.filter((e) => e.id !== id));
-
-  const handleAddEvaluators = (selected) => {
-    const newOnes = selected.filter(
-      (s) => !allAdded.some((a) => a.id === s.id)
-    );
-    setPreferredEvaluators((p) => [...p, ...newOnes]);
-  };
+  const [showEvalModal, setShowEvalModal] = useState(false);
+  const allAdded = [...DEFAULT_EVALUATORS, ...preferredEvaluators];
 
   return (
     <>
-      {/* ── Basic Information ── */}
+      {/* Project Selector */}
+      <div className="cp-section">
+        <div className="cp-section-title">Select Project</div>
+        <div className="cp-field">
+          <label className="cp-label">Project *</label>
+          <div className="cp-select-wrap">
+            <select className="cp-select" value={form.project_id}
+              onChange={(e) => setForm({ ...form, project_id: e.target.value })}>
+              <option value="">Select a project</option>
+              {projects.map((p) => (
+                <option key={p.id} value={p.id}>{p.reference_no} — {p.title}</option>
+              ))}
+            </select>
+            <span className="cp-select-chevron"><ChevronDown size={14} /></span>
+          </div>
+        </div>
+      </div>
+
+      {/* Basic Information */}
       <div className="cp-section">
         <div className="cp-section-title">Basic Information</div>
         <div className="cp-grid-2">
           <div className="cp-field">
-            <label className="cp-label">Proposal Title *</label>
-            <input
-              className="cp-input"
-              type="text"
-              placeholder="Enter proposal title"
-            />
-          </div>
-          <div className="cp-field">
-            <label className="cp-label">Research Type *</label>
+            <label className="cp-label">Scholarly Work Type *</label>
             <div className="cp-select-wrap">
-              <select className="cp-select">
-                <option value="" disabled defaultValue="">
-                  e.g., Basic Research
-                </option>
-                <option>Basic Research</option>
-                <option>Applied Research</option>
-                <option>Developmental Research</option>
-                <option>Action Research</option>
+              <select className="cp-select" value={form.scholarly_work_type}
+                onChange={(e) => setForm({ ...form, scholarly_work_type: e.target.value })}>
+                <option>Research</option>
+                <option>Extension</option>
+                <option>Instructional Material Development</option>
               </select>
-              <span className="cp-select-chevron">
-                <ChevronDown size={14} />
-              </span>
+              <span className="cp-select-chevron"><ChevronDown size={14} /></span>
             </div>
           </div>
         </div>
-        <div className="cp-field">
-          <label className="cp-label">Abstract *</label>
-          <textarea
-            className="cp-textarea"
-            placeholder="Provide a brief abstract of your research..."
-          />
-        </div>
-        <div className="cp-grid-3">
-          <div className="cp-field">
-            <label className="cp-label">Proposed Starting Date *</label>
-            <input className="cp-input" type="date" />
-          </div>
-          <div className="cp-field">
-            <label className="cp-label">Proposed Completion Date *</label>
-            <input className="cp-input" type="date" />
-          </div>
-          <div className="cp-field">
-            <label className="cp-label">Total Proposed Budget (₱) *</label>
-            <input className="cp-input" type="number" placeholder="0.00" />
-          </div>
-        </div>
       </div>
 
-      {/* ── Research Team ── */}
+      {/* Additional Questions */}
       <div className="cp-section">
-        <div className="cp-section-title">Research Team</div>
-        <div className="cp-field">
-          <label className="cp-label">Team Leader *</label>
-          <ComboBox
-            value={leader}
-            onChange={setLeader}
-            options={TEAM_MEMBERS.map((m) => m.name)}
-            placeholder="Select team leader"
-          />
-        </div>
-        <div className="cp-field">
-          <label className="cp-label">Team Members (if any)</label>
-          <div className="cp-members-list-vertical">
-            {TEAM_MEMBERS.map((m) => {
-              const checked = selectedMembers.includes(m.id);
-              return (
-                <div
-                  key={m.id}
-                  className={`cp-member-row-v ${checked ? "selected" : ""}`}
-                  onClick={() => toggleMember(m.id)}
-                >
-                  <input
-                    type="checkbox"
-                    className="cp-member-checkbox"
-                    checked={checked}
-                    onChange={() => toggleMember(m.id)}
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                  <span className="cp-member-name">{m.name}</span>
-                  <span className="cp-member-dept">- {m.dept}</span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
+        <div className="cp-section-title">Additional Information</div>
 
-      {/* ── Evaluator Assignment ── */}
-      <div className="cp-section">
-        <div
-          className="cp-section-title"
-          style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}
-        >
-          <span>Evaluator Assignment</span>
-          <button
-            className="ev-add-eval-btn"
-            onClick={() => setShowEvalModal(true)}
-          >
-            <Plus size={14} /> Add Preferred Evaluator
-          </button>
-        </div>
-        <p style={{ fontSize: 13, color: "#6b7280", margin: "-6px 0 16px" }}>
-          Evaluators are automatically assigned. You may also suggest preferred evaluators from the faculty list.
-        </p>
-
-        {/* Default auto-assigned */}
-        <div style={{ marginBottom: preferredEvaluators.length > 0 ? 16 : 0 }}>
-          <p className="ev-eval-group-label">
-            <CheckCircle2 size={13} color="#1f7a1f" />
-            Auto-Assigned Evaluators
-          </p>
-          <div className="ev-evaluator-list">
-            {defaultEvaluators.map((ev) => (
-              <div key={ev.id} className="ev-evaluator-card default">
-                <div className="ev-evaluator-avatar">
-                  {ev.name.charAt(0)}
-                </div>
-                <div className="ev-evaluator-info">
-                  <p className="ev-evaluator-name">{ev.name}</p>
-                  <p className="ev-evaluator-pos">
-                    {ev.position} • {ev.college}
-                  </p>
-                  <p className="ev-evaluator-exp">{ev.expertise}</p>
-                </div>
-                <span className="ev-default-badge">Default</span>
-              </div>
+        <div className="cp-q-block">
+          <p className="cp-q-text">Is this your first time applying for this scholarly work?</p>
+          <div className="cp-radio-row">
+            {["yes", "no"].map((v) => (
+              <label key={v} className="cp-radio-label">
+                <input type="radio" name="first_time" value={v}
+                  checked={form.is_first_time === (v === "yes")}
+                  onChange={() => setForm({ ...form, is_first_time: v === "yes" })} />
+                {v === "yes" ? "Yes" : "No"}
+              </label>
             ))}
           </div>
         </div>
 
-        {/* Preferred / suggested */}
-        {preferredEvaluators.length > 0 && (
-          <div>
-            <p className="ev-eval-group-label">
-              <UserCheck size={13} color="#7c3aed" />
-              Preferred Evaluators
-            </p>
-            <div className="ev-evaluator-list">
-              {preferredEvaluators.map((ev) => (
-                <div key={ev.id} className="ev-evaluator-card preferred">
-                  <div
-                    className="ev-evaluator-avatar"
-                    style={{ background: "#f5f3ff", color: "#7c3aed" }}
-                  >
-                    {ev.name.charAt(0)}
-                  </div>
-                  <div className="ev-evaluator-info">
-                    <p className="ev-evaluator-name">{ev.name}</p>
-                    <p className="ev-evaluator-pos">
-                      {ev.position} • {ev.college}
-                    </p>
-                    <p className="ev-evaluator-exp">{ev.expertise}</p>
-                  </div>
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "flex-end",
-                      gap: 6,
-                    }}
-                  >
-                    <span className="ev-preferred-badge">Preferred</span>
-                    <button
-                      className="cp-delete-btn"
-                      onClick={() => removePreferred(ev.id)}
-                      style={{ padding: 3 }}
-                    >
-                      <Trash2 size={13} />
-                    </button>
-                  </div>
+        <div className="cp-q-block">
+          <p className="cp-q-text">Are there external collaborators?</p>
+          <div className="cp-radio-row">
+            {["yes", "no"].map((v) => (
+              <label key={v} className="cp-radio-label">
+                <input type="radio" name="collab" value={v}
+                  checked={form.has_external_collab === (v === "yes")}
+                  onChange={() => setForm({ ...form, has_external_collab: v === "yes" })} />
+                {v === "yes" ? "Yes" : "No"}
+              </label>
+            ))}
+          </div>
+          {form.has_external_collab && (
+            <div className="cp-cond-box">
+              <textarea className="cp-textarea" placeholder="Please specify collaborators..."
+                value={form.external_collab_details}
+                onChange={(e) => setForm({ ...form, external_collab_details: e.target.value })} />
+            </div>
+          )}
+        </div>
+
+        <div className="cp-q-block">
+          <p className="cp-q-text">Has this been submitted to another agency for support?</p>
+          <div className="cp-radio-row">
+            {["yes", "no"].map((v) => (
+              <label key={v} className="cp-radio-label">
+                <input type="radio" name="submitted_elsewhere" value={v}
+                  checked={form.submitted_elsewhere === (v === "yes")}
+                  onChange={() => setForm({ ...form, submitted_elsewhere: v === "yes" })} />
+                {v === "yes" ? "Yes" : "No"}
+              </label>
+            ))}
+          </div>
+          {form.submitted_elsewhere && (
+            <div className="cp-cond-box">
+              <div className="cp-detail-grid">
+                <div>
+                  <div className="cp-col-label">Agency</div>
+                  <input className="cp-input" type="text" placeholder="Agency name"
+                    value={form.other_agency_name}
+                    onChange={(e) => setForm({ ...form, other_agency_name: e.target.value })} />
                 </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* ── Required Documents ── */}
-      <div className="cp-section">
-        <div className="cp-section-title">Required Documents</div>
-        <FileInputRow
-          label="Brief Description"
-          required
-          accept=".pdf,.doc,.docx"
-        />
-        <p className="cp-file-hint">Upload PDF or Word document</p>
-        <FileInputRow
-          label="Curriculum Vitae of Proponents"
-          required
-          multiple
-        />
-        <p className="cp-file-hint">Upload multiple CV files if needed</p>
-      </div>
-
-      {/* ── Additional Information ── */}
-      <div className="cp-section">
-        <div className="cp-section-title">Additional Information</div>
-
-        <ConditionalQuestion
-          question="Is similar work being carried out elsewhere? If yes, please give details."
-          name="q1"
-        >
-          <textarea
-            className="cp-textarea"
-            placeholder="Please give details..."
-          />
-        </ConditionalQuestion>
-
-        <div className="cp-divider" />
-
-        <ConditionalQuestion
-          question="Are there any external groups or individuals, aside from the proponent(s) collaborating in this work? If yes, please specify and indicate the type of collaboration or expected contribution of the other party to this work."
-          name="q2"
-        >
-          <textarea
-            className="cp-textarea"
-            placeholder="Please specify collaborators..."
-          />
-        </ConditionalQuestion>
-
-        <div className="cp-divider" />
-
-        <ConditionalQuestion
-          question="Has this proposal been submitted to another agency for support? If yes, please indicate:"
-          name="q3"
-        >
-          <div className="cp-detail-grid">
-            <div>
-              <div className="cp-col-label">Agency</div>
-              <input className="cp-input" type="text" placeholder="Agency name" />
-            </div>
-            <div>
-              <div className="cp-col-label">Amount</div>
-              <input className="cp-input" type="number" placeholder="Amount" />
-            </div>
-            <div>
-              <div className="cp-col-label">Extent of Difference</div>
-              <input
-                className="cp-input"
-                type="text"
-                placeholder="How is it different?"
-              />
-            </div>
-          </div>
-        </ConditionalQuestion>
-
-        <div className="cp-divider" />
-
-        <ConditionalQuestion
-          question="Is this your first time to apply for the proposed scholarly work?"
-          name="q4"
-          flip
-        >
-          <p className="cp-cond-note">
-            If no, please list the titles of past work(s) and indicate the
-            status (within three (3) years):
-          </p>
-          <div className="cp-past-grid">
-            <div>
-              <div className="cp-col-label">Title(s)</div>
-              <input
-                className="cp-input"
-                type="text"
-                placeholder="Project title"
-              />
-            </div>
-            <div>
-              <div className="cp-col-label">Duration</div>
-              <input
-                className="cp-input"
-                type="text"
-                placeholder="Duration"
-              />
-            </div>
-            <div>
-              <div className="cp-col-label">Budget</div>
-              <input
-                className="cp-input"
-                type="number"
-                placeholder="Budget"
-              />
-            </div>
-            <div>
-              <div className="cp-col-label">Status</div>
-              <div className="cp-select-wrap">
-                <select className="cp-select">
-                  <option value="" disabled defaultValue="">
-                    Select
-                  </option>
-                  <option>Ongoing</option>
-                  <option>Completed</option>
-                  <option>Terminated</option>
-                </select>
-                <span className="cp-select-chevron">
-                  <ChevronDown size={14} />
-                </span>
+                <div>
+                  <div className="cp-col-label">Amount</div>
+                  <input className="cp-input" type="number" placeholder="Amount"
+                    value={form.other_agency_amount}
+                    onChange={(e) => setForm({ ...form, other_agency_amount: e.target.value })} />
+                </div>
               </div>
             </div>
-          </div>
-        </ConditionalQuestion>
-
-        <div className="cp-divider" />
-
-        <div className="cp-field" style={{ marginBottom: 0 }}>
-          <label className="cp-label">
-            Additional information or comment pertinent to the scholarly work
-            (e.g., relevance of proposed project to career development)
-          </label>
-          <textarea
-            className="cp-textarea"
-            placeholder="Enter additional information..."
-          />
+          )}
         </div>
       </div>
 
-      {/* ── Attached Images ── */}
+      {/* Required Documents */}
       <div className="cp-section">
-        <div className="cp-section-title">Attached Images</div>
-        <FileInputRow
-          label="Upload Supporting Images"
-          multiple
-          accept="image/*"
-        />
-        <p className="cp-file-hint">
-          Upload images related to your research proposal
-        </p>
+        <div className="cp-section-title">Required Documents</div>
+        <FileInputRow label="Curriculum Vitae of Proponents" required multiple />
+        <p className="cp-file-hint">Upload multiple CV files if needed</p>
       </div>
 
-      {/* Evaluator Modal */}
+      {/* Evaluator Assignment */}
+      <div className="cp-section">
+        <div className="cp-section-title" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <span>Evaluator Assignment</span>
+          <button className="ev-add-eval-btn" onClick={() => setShowEvalModal(true)}>
+            <Plus size={14} /> Add Preferred Evaluator
+          </button>
+        </div>
+        <div className="ev-evaluator-list">
+          {DEFAULT_EVALUATORS.map((ev) => (
+            <div key={ev.id} className="ev-evaluator-card default">
+              <div className="ev-evaluator-avatar">{ev.name.charAt(0)}</div>
+              <div className="ev-evaluator-info">
+                <p className="ev-evaluator-name">{ev.name}</p>
+                <p className="ev-evaluator-pos">{ev.position} • {ev.college}</p>
+                <p className="ev-evaluator-exp">{ev.expertise}</p>
+              </div>
+              <span className="ev-default-badge">Default</span>
+            </div>
+          ))}
+          {preferredEvaluators.map((ev) => (
+            <div key={ev.id} className="ev-evaluator-card preferred">
+              <div className="ev-evaluator-avatar" style={{ background: "#f5f3ff", color: "#7c3aed" }}>{ev.name.charAt(0)}</div>
+              <div className="ev-evaluator-info">
+                <p className="ev-evaluator-name">{ev.name}</p>
+                <p className="ev-evaluator-pos">{ev.position} • {ev.college}</p>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
+                <span className="ev-preferred-badge">Preferred</span>
+                <button className="cp-delete-btn" onClick={() => setPreferredEvaluators((p) => p.filter((e) => e.id !== ev.id))} style={{ padding: 3 }}>
+                  <Trash2 size={13} />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {showEvalModal && (
-        <EvaluatorModal
-          onClose={() => setShowEvalModal(false)}
-          onAdd={handleAddEvaluators}
-          alreadyAdded={allAdded}
-        />
+        <EvaluatorModal onClose={() => setShowEvalModal(false)}
+          onAdd={(selected) => {
+            const newOnes = selected.filter((s) => !allAdded.some((a) => a.id === s.id));
+            setPreferredEvaluators((p) => [...p, ...newOnes]);
+          }}
+          alreadyAdded={allAdded} />
       )}
     </>
   );
@@ -798,31 +345,17 @@ function BudgetTab() {
   const [items, setItems] = useState([
     { id: 1, category: "Personnel",   description: "Research Assistants (2 positions)", qty: 24, unitPrice: 3500 },
     { id: 2, category: "Equipment",   description: "Laboratory Equipment Set",          qty: 1,  unitPrice: 125000 },
-    { id: 3, category: "Materials",   description: "Research Materials and Supplies",   qty: 24, unitPrice: 2500 },
-    { id: 4, category: "Travel",      description: "Field Research Travel",             qty: 12, unitPrice: 4500 },
-    { id: 5, category: "Services",    description: "Data Analysis Services",            qty: 1,  unitPrice: 35000 },
-    { id: 6, category: "Publication", description: "Journal Publication Fees",          qty: 3,  unitPrice: 2500 },
+    { id: 3, category: "Travel",      description: "Field Research Travel",             qty: 12, unitPrice: 4500 },
   ]);
 
   const total = items.reduce((sum, i) => sum + i.qty * i.unitPrice, 0);
-  const addItem = () =>
-    setItems((p) => [
-      ...p,
-      { id: Date.now(), category: "Personnel", description: "", qty: 1, unitPrice: 0 },
-    ]);
-  const deleteItem = (id) => setItems((p) => p.filter((i) => i.id !== id));
-  const fmt = (n) => "$" + n.toLocaleString();
+  const fmt = (n) => "₱" + n.toLocaleString();
 
   return (
     <div className="cp-section">
       <div className="cp-budget-header">
-        <div
-          className="cp-section-title"
-          style={{ margin: 0, border: "none", padding: 0 }}
-        >
-          Budget Plan
-        </div>
-        <button className="create-btn" onClick={addItem}>
+        <div className="cp-section-title" style={{ margin: 0, border: "none", padding: 0 }}>Budget Plan</div>
+        <button className="create-btn" onClick={() => setItems((p) => [...p, { id: Date.now(), category: "Personnel", description: "", qty: 1, unitPrice: 0 }])}>
           <Plus size={15} /> Add Item
         </button>
       </div>
@@ -840,57 +373,21 @@ function BudgetTab() {
           </thead>
           <tbody>
             {items.map((item) => {
-              const c = CATEGORY_COLORS[item.category] || {
-                bg: "#f3f4f6",
-                color: "#374151",
-              };
+              const c = CATEGORY_COLORS[item.category] || { bg: "#f3f4f6", color: "#374151" };
               return (
                 <tr key={item.id}>
-                  <td>
-                    <span
-                      className="cp-cat-badge"
-                      style={{ background: c.bg, color: c.color }}
-                    >
-                      {item.category}
-                    </span>
-                  </td>
+                  <td><span className="cp-cat-badge" style={{ background: c.bg, color: c.color }}>{item.category}</span></td>
                   <td>{item.description}</td>
                   <td style={{ textAlign: "right" }}>{item.qty}</td>
                   <td style={{ textAlign: "right" }}>{fmt(item.unitPrice)}</td>
-                  <td style={{ textAlign: "right", fontWeight: 600 }}>
-                    {fmt(item.qty * item.unitPrice)}
-                  </td>
-                  <td>
-                    <button
-                      className="cp-delete-btn"
-                      onClick={() => deleteItem(item.id)}
-                    >
-                      <Trash2 size={15} />
-                    </button>
-                  </td>
+                  <td style={{ textAlign: "right", fontWeight: 600 }}>{fmt(item.qty * item.unitPrice)}</td>
+                  <td><button className="cp-delete-btn" onClick={() => setItems((p) => p.filter((i) => i.id !== item.id))}><Trash2 size={15} /></button></td>
                 </tr>
               );
             })}
             <tr className="cp-total-row">
-              <td
-                colSpan={4}
-                style={{
-                  textAlign: "right",
-                  fontWeight: 600,
-                  color: "#374151",
-                }}
-              >
-                Total Budget:
-              </td>
-              <td
-                style={{
-                  textAlign: "right",
-                  fontWeight: 700,
-                  color: "#1f7a1f",
-                }}
-              >
-                {fmt(total)}
-              </td>
+              <td colSpan={4} style={{ textAlign: "right", fontWeight: 600, color: "#374151" }}>Total Budget:</td>
+              <td style={{ textAlign: "right", fontWeight: 700, color: "#1f7a1f" }}>{fmt(total)}</td>
               <td />
             </tr>
           </tbody>
@@ -900,100 +397,73 @@ function BudgetTab() {
   );
 }
 
-// ─── Outputs Tab ──────────────────────────────────────────────────────────────
-function OutputsTab() {
-  const [outputs, setOutputs] = useState([
-    { id: 1, title: "Research Publication",  desc: "Peer-reviewed journal article in high-impact environmental science journal", target: "Month 18" },
-    { id: 2, title: "Technical Report",      desc: "Comprehensive technical report with findings and recommendations",           target: "Month 24" },
-    { id: 3, title: "Dataset",               desc: "Publicly available dataset of coastal ecosystem measurements",               target: "Month 20" },
-  ]);
-
-  const addOutput = () =>
-    setOutputs((p) => [
-      ...p,
-      { id: Date.now(), title: "New Output", desc: "", target: "Month 0" },
-    ]);
-  const deleteOutput = (id) =>
-    setOutputs((p) => p.filter((o) => o.id !== id));
-
-  return (
-    <div className="cp-section">
-      <div className="cp-budget-header">
-        <div
-          className="cp-section-title"
-          style={{ margin: 0, border: "none", padding: 0 }}
-        >
-          Expected Outputs &amp; Deliverables
-        </div>
-        <button className="create-btn" onClick={addOutput}>
-          <Plus size={15} /> Add Output
-        </button>
-      </div>
-      <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 12 }}>
-        {outputs.map((o) => (
-          <div key={o.id} className="cp-output-card">
-            <div className="cp-output-body">
-              <div className="cp-output-title">{o.title}</div>
-              <div className="cp-output-desc">{o.desc}</div>
-              <div className="cp-output-target">Target: {o.target}</div>
-            </div>
-            <button
-              className="cp-delete-btn"
-              onClick={() => deleteOutput(o.id)}
-            >
-              <Trash2 size={15} />
-            </button>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function Proposals() {
-  const [activeTab, setActiveTab] = useState("Overview");
+  const [activeTab,  setActiveTab]  = useState("Overview");
+  const [projects,   setProjects]   = useState([]);
+  const [submitting, setSubmitting] = useState(false);
+  const [success,    setSuccess]    = useState("");
+  const [error,      setError]      = useState("");
+  const [form, setForm] = useState({
+    project_id:             "",
+    scholarly_work_type:    "Research",
+    is_first_time:          true,
+    has_external_collab:    false,
+    external_collab_details:"",
+    submitted_elsewhere:    false,
+    other_agency_name:      "",
+    other_agency_amount:    "",
+  });
+
+  useEffect(() => {
+    api.get("/projects").then((res) => {
+      // Only show Draft projects
+      setProjects(res.data.filter((p) => p.status === "Draft"));
+    });
+  }, []);
+
+  const handleSubmit = async () => {
+    if (!form.project_id) {
+      setError("Please select a project first.");
+      return;
+    }
+    setError(""); setSuccess(""); setSubmitting(true);
+    try {
+      // First create/save the proposal info
+      await api.post(`/projects/${form.project_id}/proposals`, {
+        scholarly_work_type:     form.scholarly_work_type,
+        is_first_time:           form.is_first_time,
+        has_external_collab:     form.has_external_collab,
+        external_collab_details: form.external_collab_details,
+        submitted_elsewhere:     form.submitted_elsewhere,
+        other_agency_name:       form.other_agency_name,
+        other_agency_amount:     form.other_agency_amount || null,
+      }).catch(() => {}); // ignore if proposal already exists
+
+      // Then submit the project
+      await api.post(`/projects/${form.project_id}/submit`);
+      setSuccess("Proposal submitted successfully! Status changed to Submitted.");
+
+      // Refresh projects list
+      const res = await api.get("/projects");
+      setProjects(res.data.filter((p) => p.status === "Draft"));
+      setForm({ ...form, project_id: "" });
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to submit proposal.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const renderTab = () => {
     switch (activeTab) {
-      case "Overview":
-        return <OverviewTab />;
-      case "Work Plan":
-        return (
-          <SimpleUploadTab
-            title="Work Plan"
-            subtitle="Upload your detailed work plan document"
-            fieldLabel="Work Plan Document"
-            accept=".pdf,.doc,.docx,.xlsx"
-            note="Your work plan should include detailed activities, timelines, responsibilities, and milestones for your research project."
-          />
-        );
-      case "Budget":
-        return <BudgetTab />;
-      case "Framework":
-        return (
-          <SimpleUploadTab
-            title="Project Framework"
-            subtitle="Upload your project framework document"
-            fieldLabel="Project Framework Document"
-            accept=".pdf,.doc,.docx"
-            note="Your framework should include research objectives, success indicators, methodology, assumptions, and potential risks."
-          />
-        );
-      case "References":
-        return (
-          <SimpleUploadTab
-            title="References and Citations"
-            subtitle="Upload your references document"
-            fieldLabel="References Document"
-            accept=".pdf,.doc,.docx"
-            note="Include all references and citations used in your research proposal in proper academic format."
-          />
-        );
-      case "Outputs":
-        return <OutputsTab />;
-      default:
-        return <OverviewTab />;
+      case "Overview":   return <OverviewTab form={form} setForm={setForm} projects={projects} />;
+      case "Work Plan":  return <SimpleUploadTab title="Work Plan" subtitle="Upload your detailed work plan document" fieldLabel="Work Plan Document" accept=".pdf,.doc,.docx,.xlsx" note="Your work plan should include detailed activities, timelines, responsibilities, and milestones." />;
+      case "Budget":     return <BudgetTab />;
+      case "Framework":  return <SimpleUploadTab title="Project Framework" subtitle="Upload your project framework document" fieldLabel="Project Framework Document" accept=".pdf,.doc,.docx" note="Your framework should include research objectives, success indicators, methodology, assumptions, and potential risks." />;
+      case "References": return <SimpleUploadTab title="References and Citations" subtitle="Upload your references document" fieldLabel="References Document" accept=".pdf,.doc,.docx" note="Include all references and citations used in proper academic format." />;
+      case "Outputs":    return <SimpleUploadTab title="Expected Outputs" subtitle="Upload your expected outputs document" fieldLabel="Outputs Document" accept=".pdf,.doc,.docx" />;
+      default:           return <OverviewTab form={form} setForm={setForm} projects={projects} />;
     }
   };
 
@@ -1002,51 +472,42 @@ export default function Proposals() {
       <Navbar />
       <div className="main-content">
         <Topbar title="Proposals" />
-
         <div className="dashboard-content">
-          {/* Page Header */}
+
           <div style={{ marginBottom: 20 }}>
-            <h2 className="page-title">Create Proposal</h2>
+            <h2 className="page-title">Submit Proposal</h2>
             <p style={{ margin: 0, fontSize: 13, color: "#6b7280" }}>
               Complete all tabs to submit your research proposal
             </p>
           </div>
 
-          {/* Tab Bar */}
+          {error && <div className="auth-error" style={{ marginBottom: 16 }}>{error}</div>}
+          {success && (
+            <div style={{ background: "#dcfce7", color: "#15803d", padding: "12px 16px", borderRadius: 8, marginBottom: 16, fontSize: 14 }}>
+              {success}
+            </div>
+          )}
+
           <div className="cp-tab-bar">
             {TABS.map((tab) => (
-              <button
-                key={tab}
-                className={`cp-tab-btn ${activeTab === tab ? "active" : ""}`}
-                onClick={() => setActiveTab(tab)}
-              >
-                {tab}
-              </button>
+              <button key={tab} className={`cp-tab-btn ${activeTab === tab ? "active" : ""}`}
+                onClick={() => setActiveTab(tab)}>{tab}</button>
             ))}
           </div>
 
-          {/* Tab Content */}
           {renderTab()}
 
-          {/* Action Buttons */}
           <div className="cp-form-actions">
             <button className="cp-btn">Save as Draft</button>
             <div className="cp-actions-right">
-              <button className="cp-btn">Preview</button>
-              <button
-                className="cp-btn primary"
-                style={{
-                  background: "#1f7a1f",
-                  borderColor: "#1f7a1f",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 7,
-                }}
-              >
-                <Send size={14} /> Submit Proposal
+              <button className="cp-btn primary"
+                style={{ background: "#1f7a1f", borderColor: "#1f7a1f", display: "flex", alignItems: "center", gap: 7 }}
+                onClick={handleSubmit} disabled={submitting}>
+                <Send size={14} /> {submitting ? "Submitting..." : "Submit Proposal"}
               </button>
             </div>
           </div>
+
         </div>
       </div>
     </div>

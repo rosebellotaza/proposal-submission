@@ -1,98 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   ArrowLeft, Calendar, DollarSign, GitBranch,
-  BookOpen, BarChart2, FileText, Users, Pencil,
+  BookOpen, BarChart2, FileText, Users,
 } from "lucide-react";
 import Navbar from "../../components/researcher/Navbar";
 import Topbar from "../../components/Topbar";
 import "../../styles/researcher.css";
-
-// ─── Mock project data ─────────────────────────────────────────────────────
-const PROJECT_DATA = {
-  "PRJ-001": {
-    id: "PRJ-001",
-    title: "Climate Change Impact on Coastal Ecosystems",
-    status: "Approved",
-    type: "Basic Research",
-    budget: "$450,000",
-    duration: "24 months",
-    teamSize: 4,
-    investigator: "Dr. Sarah Johnson",
-    department: "Environmental Science",
-    site: "Coastal Region A",
-    submittedDate: "2026-01-15",
-    description:
-      "This research project aims to investigate the impact of environmental factors on the designated area. The study will employ comprehensive methodologies to gather and analyze data, contributing to the advancement of knowledge in this field. Expected outcomes include publications, technical reports, and practical recommendations for stakeholders.",
-    team: [
-      { name: "Dr. Sarah Johnson",  role: "Principal Investigator", dept: "Environmental Science" },
-      { name: "Dr. Mark Thompson",  role: "Co-Investigator",        dept: "Marine Biology" },
-      { name: "Dr. Rachel Lee",     role: "Research Associate",     dept: "Environmental Science" },
-      { name: "John Davis",         role: "Data Analyst",           dept: "Data Analytics" },
-    ],
-    budgetItems: [
-      { category: "Personnel",   description: "Research Assistants (2 positions)", qty: 24, unitPrice: 3500 },
-      { category: "Equipment",   description: "Laboratory Equipment Set",          qty: 1,  unitPrice: 125000 },
-      { category: "Materials",   description: "Research Materials and Supplies",   qty: 24, unitPrice: 2500 },
-      { category: "Travel",      description: "Field Research Travel",             qty: 12, unitPrice: 4500 },
-      { category: "Services",    description: "Data Analysis Services",            qty: 1,  unitPrice: 35000 },
-      { category: "Publication", description: "Journal Publication Fees",          qty: 3,  unitPrice: 2500 },
-    ],
-    schedule: [
-      { phase: "Phase 1: Data Collection",   start: "2026-01-15", end: "2026-06-15", status: "Completed" },
-      { phase: "Phase 2: Data Analysis",     start: "2026-06-16", end: "2026-10-15", status: "In Progress" },
-      { phase: "Phase 3: Report Writing",    start: "2026-10-16", end: "2027-01-15", status: "Pending" },
-      { phase: "Phase 4: Publication",       start: "2027-01-16", end: "2028-01-15", status: "Pending" },
-    ],
-  },
-  "PRJ-002": {
-    id: "PRJ-002",
-    title: "AI-Driven Healthcare Diagnosis System",
-    status: "Under Evaluation",
-    type: "Applied Research",
-    budget: "$320,000",
-    duration: "18 months",
-    teamSize: 3,
-    investigator: "Prof. Michael Chen",
-    department: "Computer Science",
-    site: "University Lab B",
-    submittedDate: "2026-02-10",
-    description: "This project develops an AI-powered diagnostic system to improve healthcare outcomes through machine learning and data analysis.",
-    team: [
-      { name: "Prof. Michael Chen", role: "Principal Investigator", dept: "Computer Science" },
-      { name: "Dr. Anna Wu",        role: "Co-Investigator",        dept: "Medicine" },
-      { name: "Kevin Reyes",        role: "Research Associate",     dept: "Data Science" },
-    ],
-    budgetItems: [
-      { category: "Personnel",  description: "Research Staff",         qty: 18, unitPrice: 5000 },
-      { category: "Equipment",  description: "GPU Servers",            qty: 2,  unitPrice: 50000 },
-      { category: "Services",   description: "Cloud Computing",        qty: 18, unitPrice: 3000 },
-      { category: "Travel",     description: "Conference Attendance",  qty: 3,  unitPrice: 4000 },
-    ],
-    schedule: [
-      { phase: "Phase 1: System Design",   start: "2026-02-10", end: "2026-05-10", status: "Completed" },
-      { phase: "Phase 2: Development",     start: "2026-05-11", end: "2026-10-10", status: "In Progress" },
-      { phase: "Phase 3: Testing",         start: "2026-10-11", end: "2027-02-10", status: "Pending" },
-    ],
-  },
-};
-
-// Fallback for projects without full mock data
-const buildFallback = (id, projects) => {
-  const found = projects?.find((p) => p.id === id);
-  if (!found) return null;
-  return {
-    ...found,
-    teamSize: 3,
-    investigator: found.leader,
-    site: "University Campus",
-    submittedDate: "2026-01-01",
-    description: "This research project aims to investigate and contribute to the advancement of knowledge in this field.",
-    team: [{ name: found.leader, role: "Principal Investigator", dept: found.department }],
-    budgetItems: [],
-    schedule: [],
-  };
-};
+import api from "../../utils/api";
 
 const STATUS_COLORS = {
   "Approved":         { bg: "#dcfce7", color: "#15803d" },
@@ -102,37 +17,43 @@ const STATUS_COLORS = {
   "Draft":            { bg: "#f3f4f6", color: "#6b7280" },
 };
 
-const CATEGORY_COLORS = {
-  Personnel:   { bg: "#f0fdf4", color: "#15803d" },
-  Equipment:   { bg: "#eff6ff", color: "#1d4ed8" },
-  Materials:   { bg: "#fefce8", color: "#a16207" },
-  Travel:      { bg: "#fff7ed", color: "#c2410c" },
-  Services:    { bg: "#f5f3ff", color: "#6d28d9" },
-  Publication: { bg: "#fdf2f8", color: "#9d174d" },
-};
-
-const SCHEDULE_COLORS = {
-  Completed:   { bg: "#dcfce7", color: "#15803d" },
-  "In Progress": { bg: "#dbeafe", color: "#1d4ed8" },
-  Pending:     { bg: "#f3f4f6", color: "#6b7280" },
-};
-
-const VIEW_TABS = ["Overview", "Team", "Budget", "Schedule"];
+const VIEW_TABS = ["Overview", "Team"];
 
 const MGMT_LINKS = [
-  { label: "Work Plan",    icon: <Calendar size={22} color="#1f7a1f" /> },
-  { label: "Budget Plan",  icon: <DollarSign size={22} color="#1f7a1f" /> },
-  { label: "Framework",    icon: <GitBranch size={22} color="#1f7a1f" /> },
-  { label: "References",   icon: <BookOpen size={22} color="#1f7a1f" /> },
-  { label: "Outputs",      icon: <BarChart2 size={22} color="#1f7a1f" /> },
+  { label: "Work Plan",   icon: <Calendar size={22} color="#1f7a1f" />,   path: "work-plan" },
+  { label: "Budget Plan", icon: <DollarSign size={22} color="#1f7a1f" />, path: "budget-plan" },
+  { label: "Framework",   icon: <GitBranch size={22} color="#1f7a1f" />,  path: "framework" },
+  { label: "References",  icon: <BookOpen size={22} color="#1f7a1f" />,   path: "references" },
+  { label: "Outputs",     icon: <BarChart2 size={22} color="#1f7a1f" />,  path: "outputs" },
 ];
 
 export default function ProjectView() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [project,   setProject]   = useState(null);
+  const [loading,   setLoading]   = useState(true);
   const [activeTab, setActiveTab] = useState("Overview");
 
-  const project = PROJECT_DATA[id] || buildFallback(id, []);
+  useEffect(() => {
+    api.get(`/projects/${id}`)
+      .then((res) => setProject(res.data))
+      .catch(() => setProject(null))
+      .finally(() => setLoading(false));
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="dashboard-layout">
+        <Navbar />
+        <div className="main-content">
+          <Topbar title="Research Projects" />
+          <div className="dashboard-content">
+            <p style={{ color: "#9ca3af" }}>Loading project...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!project) {
     return (
@@ -149,18 +70,15 @@ export default function ProjectView() {
   }
 
   const statusStyle = STATUS_COLORS[project.status] || STATUS_COLORS["Draft"];
-  const fmt = (n) => "$" + n.toLocaleString();
-  const total = project.budgetItems.reduce((s, i) => s + i.qty * i.unitPrice, 0);
 
   return (
     <div className="dashboard-layout">
       <Navbar />
       <div className="main-content">
         <Topbar title="Research Projects" />
-
         <div className="dashboard-content">
 
-          {/* ── Header ── */}
+          {/* Header */}
           <div className="pv-header">
             <div className="pv-header-left">
               <button className="pv-back-btn" onClick={() => navigate("/researcher/projects")}>
@@ -169,27 +87,26 @@ export default function ProjectView() {
               <div>
                 <div className="pv-title-row">
                   <h2 className="pv-title">{project.title}</h2>
-                  <span
-                    className="badge"
-                    style={{ background: statusStyle.bg, color: statusStyle.color }}
-                  >
+                  <span className="badge" style={{ background: statusStyle.bg, color: statusStyle.color }}>
                     {project.status}
                   </span>
                 </div>
-                <p className="pv-id">{project.id}</p>
+                <p className="pv-id">{project.reference_no}</p>
               </div>
             </div>
-            <button className="create-btn">
-              <Pencil size={15} /> Edit Project
-            </button>
           </div>
 
-          {/* ── Project Management Cards ── */}
+          {/* Project Management Cards */}
           <div className="pv-mgmt-box">
             <p className="pv-mgmt-label">Project Management</p>
             <div className="pv-mgmt-cards">
               {MGMT_LINKS.map((m) => (
-                <div key={m.label} className="pv-mgmt-card">
+                <div
+                  key={m.label}
+                  className="pv-mgmt-card"
+                  onClick={() => navigate(`/researcher/${m.path}`)}
+                  style={{ cursor: "pointer" }}
+                >
                   {m.icon}
                   <span className="pv-mgmt-name">{m.label}</span>
                 </div>
@@ -197,7 +114,7 @@ export default function ProjectView() {
             </div>
           </div>
 
-          {/* ── Stat Cards ── */}
+          {/* Stat Cards */}
           <div className="pv-stats">
             <div className="pv-stat-card">
               <FileText size={22} color="#1f7a1f" />
@@ -210,26 +127,28 @@ export default function ProjectView() {
               <DollarSign size={22} color="#1f7a1f" />
               <div>
                 <p className="pv-stat-label">Budget</p>
-                <p className="pv-stat-value">{project.budget}</p>
+                <p className="pv-stat-value">
+                  {project.budget ? `₱${Number(project.budget).toLocaleString()}` : "—"}
+                </p>
               </div>
             </div>
             <div className="pv-stat-card">
               <Calendar size={22} color="#1f7a1f" />
               <div>
-                <p className="pv-stat-label">Duration</p>
-                <p className="pv-stat-value">{project.duration}</p>
+                <p className="pv-stat-label">Start Date</p>
+                <p className="pv-stat-value">{project.start_date ? new Date(project.start_date).toLocaleDateString() : "—"}</p>
               </div>
             </div>
             <div className="pv-stat-card">
               <Users size={22} color="#1f7a1f" />
               <div>
                 <p className="pv-stat-label">Team Size</p>
-                <p className="pv-stat-value">{project.teamSize} members</p>
+                <p className="pv-stat-value">{project.proponents?.length || 0} members</p>
               </div>
             </div>
           </div>
 
-          {/* ── Tab Bar ── */}
+          {/* Tab Bar */}
           <div className="cp-tab-bar" style={{ marginBottom: 16 }}>
             {VIEW_TABS.map((tab) => (
               <button
@@ -242,40 +161,52 @@ export default function ProjectView() {
             ))}
           </div>
 
-          {/* ── Tab Content ── */}
+          {/* Overview Tab */}
           {activeTab === "Overview" && (
             <>
               <div className="cp-section">
                 <div className="cp-section-title">Project Information</div>
                 <div className="pv-info-grid">
                   <div>
-                    <p className="pv-info-label">Principal Investigator</p>
-                    <p className="pv-info-value">{project.investigator}</p>
+                    <p className="pv-info-label">Reference No</p>
+                    <p className="pv-info-value">{project.reference_no}</p>
                   </div>
                   <div>
-                    <p className="pv-info-label">Department</p>
-                    <p className="pv-info-value">{project.department}</p>
+                    <p className="pv-info-label">Category</p>
+                    <p className="pv-info-value">{project.category || "—"}</p>
                   </div>
                   <div>
-                    <p className="pv-info-label">Research Site</p>
-                    <p className="pv-info-value">{project.site}</p>
+                    <p className="pv-info-label">Site / Area</p>
+                    <p className="pv-info-value">{project.site_area || "—"}</p>
                   </div>
                   <div>
-                    <p className="pv-info-label">Submitted Date</p>
-                    <p className="pv-info-value">{project.submittedDate}</p>
+                    <p className="pv-info-label">End Date</p>
+                    <p className="pv-info-value">{project.end_date ? new Date(project.end_date).toLocaleDateString() : "—"}</p>
                   </div>
                 </div>
               </div>
 
-              <div className="cp-section">
-                <div className="cp-section-title">Project Description</div>
-                <p style={{ fontSize: 14, color: "#374151", lineHeight: 1.7, margin: 0 }}>
-                  {project.description}
-                </p>
-              </div>
+              {project.nature_and_significance && (
+                <div className="cp-section">
+                  <div className="cp-section-title">Nature and Significance</div>
+                  <p style={{ fontSize: 14, color: "#374151", lineHeight: 1.7, margin: 0 }}>
+                    {project.nature_and_significance}
+                  </p>
+                </div>
+              )}
+
+              {project.methodology && (
+                <div className="cp-section">
+                  <div className="cp-section-title">Methodology</div>
+                  <p style={{ fontSize: 14, color: "#374151", lineHeight: 1.7, margin: 0 }}>
+                    {project.methodology}
+                  </p>
+                </div>
+              )}
             </>
           )}
 
+          {/* Team Tab */}
           {activeTab === "Team" && (
             <div className="cp-section">
               <div className="cp-section-title">Team Members</div>
@@ -284,118 +215,26 @@ export default function ProjectView() {
                   <thead>
                     <tr>
                       <th>Name</th>
+                      <th>Email</th>
                       <th>Role</th>
-                      <th>Department</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {project.team.map((m, i) => (
+                    {project.proponents?.map((p, i) => (
                       <tr key={i}>
                         <td>
                           <div className="name-cell">
-                            <div className="avatar">
-                              {m.name.charAt(0)}
-                            </div>
-                            {m.name}
+                            <div className="avatar">{p.personnel?.name?.charAt(0)}</div>
+                            {p.personnel?.name}
                           </div>
                         </td>
-                        <td>{m.role}</td>
-                        <td>{m.dept}</td>
+                        <td>{p.personnel?.email}</td>
+                        <td>{p.role}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
-            </div>
-          )}
-
-          {activeTab === "Budget" && (
-            <div className="cp-section">
-              <div className="cp-section-title">Budget Breakdown</div>
-              {project.budgetItems.length === 0 ? (
-                <p style={{ color: "#9ca3af", fontSize: 14 }}>No budget items available.</p>
-              ) : (
-                <div className="table-scroll">
-                  <table className="cp-budget-table">
-                    <thead>
-                      <tr>
-                        <th>Category</th>
-                        <th>Item Description</th>
-                        <th style={{ textAlign: "right" }}>Quantity</th>
-                        <th style={{ textAlign: "right" }}>Unit Price</th>
-                        <th style={{ textAlign: "right" }}>Total</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {project.budgetItems.map((item, i) => {
-                        const c = CATEGORY_COLORS[item.category] || { bg: "#f3f4f6", color: "#374151" };
-                        return (
-                          <tr key={i}>
-                            <td>
-                              <span className="cp-cat-badge" style={{ background: c.bg, color: c.color }}>
-                                {item.category}
-                              </span>
-                            </td>
-                            <td>{item.description}</td>
-                            <td style={{ textAlign: "right" }}>{item.qty}</td>
-                            <td style={{ textAlign: "right" }}>{fmt(item.unitPrice)}</td>
-                            <td style={{ textAlign: "right", fontWeight: 600 }}>
-                              {fmt(item.qty * item.unitPrice)}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                      <tr className="cp-total-row">
-                        <td colSpan={4} style={{ textAlign: "right", fontWeight: 600, color: "#374151" }}>
-                          Total Budget:
-                        </td>
-                        <td style={{ textAlign: "right", fontWeight: 700, color: "#1f7a1f" }}>
-                          {fmt(total)}
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          )}
-
-          {activeTab === "Schedule" && (
-            <div className="cp-section">
-              <div className="cp-section-title">Project Schedule</div>
-              {project.schedule.length === 0 ? (
-                <p style={{ color: "#9ca3af", fontSize: 14 }}>No schedule available.</p>
-              ) : (
-                <div className="table-scroll">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Phase</th>
-                        <th>Start Date</th>
-                        <th>End Date</th>
-                        <th>Status</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {project.schedule.map((s, i) => {
-                        const sc = SCHEDULE_COLORS[s.status] || SCHEDULE_COLORS["Pending"];
-                        return (
-                          <tr key={i}>
-                            <td><strong>{s.phase}</strong></td>
-                            <td>{s.start}</td>
-                            <td>{s.end}</td>
-                            <td>
-                              <span className="badge" style={{ background: sc.bg, color: sc.color }}>
-                                {s.status}
-                              </span>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              )}
             </div>
           )}
 

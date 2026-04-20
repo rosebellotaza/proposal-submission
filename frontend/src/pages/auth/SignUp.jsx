@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { UserPlus } from "lucide-react";
 import logo from "../../assets/logo.png";
 import schoolBg from "../../assets/school.png";
-import { saveUser, setSession, dashboardRoute } from "../../utils/auth";
+import { registerUser, dashboardRoute } from "../../utils/auth";
 
 const roleThemes = {
   researcher: { color: "#1a6b1a", light: "#e6f4ea" },
@@ -18,10 +18,11 @@ export default function SignUp() {
   const [password, setPassword] = useState("");
   const [confirm,  setConfirm]  = useState("");
   const [error,    setError]    = useState("");
+  const [loading,  setLoading]  = useState(false);
   const navigate = useNavigate();
   const theme = roleThemes[role];
 
-  const handleSignUp = () => {
+  const handleSignUp = async () => {
     setError("");
 
     if (!name || !email || !password || !confirm) {
@@ -39,10 +40,21 @@ export default function SignUp() {
       return;
     }
 
-    const user = { name, email, password, role };
-    saveUser(user);
-    setSession(user);
-    navigate(dashboardRoute(role));
+    setLoading(true);
+    try {
+      const user = await registerUser(name, email, password, role);
+      navigate(dashboardRoute(user.role));
+    } catch (err) {
+      const errors = err.response?.data?.errors;
+      if (errors) {
+        const first = Object.values(errors)[0][0];
+        setError(first);
+      } else {
+        setError(err.response?.data?.message || "Registration failed. Please try again.");
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -67,9 +79,7 @@ export default function SignUp() {
           <h2>Create Account</h2>
           <p className="subtitle">Sign up to get started</p>
 
-          {error && (
-            <div className="auth-error">{error}</div>
-          )}
+          {error && <div className="auth-error">{error}</div>}
 
           <div className="form-group">
             <label>Select Role</label>
@@ -123,9 +133,9 @@ export default function SignUp() {
             />
           </div>
 
-          <button className="primary-btn" onClick={handleSignUp}>
+          <button className="primary-btn" onClick={handleSignUp} disabled={loading}>
             <UserPlus size={18} />
-            Sign Up
+            {loading ? "Creating account..." : "Sign Up"}
           </button>
 
           <p className="auth-link">

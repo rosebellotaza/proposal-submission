@@ -1,19 +1,58 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, FileText } from "lucide-react";
 import Navbar from "../../components/researcher/Navbar";
 import Topbar from "../../components/Topbar";
 import "../../styles/researcher.css";
+import api from "../../utils/api";
 
 export default function ProjectCreate() {
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+  const [error,   setError]   = useState("");
+  const [form,    setForm]    = useState({
+    title:    "",
+    type:     "Research",
+    category: "",
+    budget:   "",
+    start_date: "",
+    end_date:   "",
+    methodology: "",
+    nature_and_significance: "",
+  });
+
+  const handleChange = (e) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async () => {
+    setError("");
+    if (!form.title || !form.type) {
+      setError("Title and type are required.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await api.post("/projects", form);
+      navigate(`/researcher/projects/${res.data.id}`);
+    } catch (err) {
+      const errors = err.response?.data?.errors;
+      if (errors) {
+        setError(Object.values(errors)[0][0]);
+      } else {
+        setError(err.response?.data?.message || "Failed to create project.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="dashboard-layout">
       <Navbar />
-
       <div className="main-content">
         <Topbar title="Research Projects" />
-
         <div className="dashboard-content">
 
           {/* Header */}
@@ -29,60 +68,45 @@ export default function ProjectCreate() {
             </div>
           </div>
 
+          {error && (
+            <div className="auth-error" style={{ marginBottom: 16 }}>{error}</div>
+          )}
+
           {/* Form */}
           <div className="cp-section">
             <div className="cp-section-title">Project Information</div>
 
-            {/* Project Title */}
             <div className="cp-field">
               <label className="cp-label">Project Title *</label>
-              <input className="cp-input" type="text" placeholder="Enter project title" />
-            </div>
-
-            {/* Description */}
-            <div className="cp-field">
-              <label className="cp-label">Description *</label>
-              <textarea
-                className="cp-textarea"
-                placeholder="Provide a detailed description of the research project"
+              <input
+                className="cp-input"
+                type="text"
+                name="title"
+                placeholder="Enter project title"
+                value={form.title}
+                onChange={handleChange}
               />
             </div>
 
-            {/* Department + Project Leader */}
             <div className="cp-grid-2">
               <div className="cp-field">
-                <label className="cp-label">Department *</label>
-                <input className="cp-input" type="text" placeholder="e.g., Computer Science" />
-              </div>
-              <div className="cp-field">
-                <label className="cp-label">Project Leader *</label>
-                <input className="cp-input" type="text" placeholder="Lead researcher name" />
-              </div>
-            </div>
-
-            {/* Start Date + End Date */}
-            <div className="cp-grid-2">
-              <div className="cp-field">
-                <label className="cp-label">Start Date *</label>
-                <input className="cp-input" type="date" />
-              </div>
-              <div className="cp-field">
-                <label className="cp-label">End Date *</label>
-                <input className="cp-input" type="date" />
-              </div>
-            </div>
-
-            {/* Budget + Research Category */}
-            <div className="cp-grid-2">
-              <div className="cp-field">
-                <label className="cp-label">Budget (₱) *</label>
-                <input className="cp-input" type="number" placeholder="0.00" />
-              </div>
-              <div className="cp-field">
-                <label className="cp-label">Research Category *</label>
+                <label className="cp-label">Type *</label>
                 <div className="cp-select-wrap">
-                  <select className="cp-select" defaultValue="">
-                    <option value="" disabled>Select category</option>
+                  <select className="cp-select" name="type" value={form.type} onChange={handleChange}>
+                    <option>Research</option>
+                    <option>ICT</option>
+                    <option>Extension</option>
+                    <option>ORGMS</option>
+                    <option>Others</option>
+                  </select>
+                  <span className="cp-select-chevron">▾</span>
+                </div>
+              </div>
+              <div className="cp-field">
+                <label className="cp-label">Research Category</label>
+                <div className="cp-select-wrap">
+                  <select className="cp-select" name="category" value={form.category} onChange={handleChange}>
+                    <option value="">Select category</option>
                     <option>Basic Research</option>
                     <option>Applied Research</option>
                     <option>Developmental Research</option>
@@ -92,28 +116,66 @@ export default function ProjectCreate() {
                 </div>
               </div>
             </div>
+
+            <div className="cp-grid-2">
+              <div className="cp-field">
+                <label className="cp-label">Start Date</label>
+                <input className="cp-input" type="date" name="start_date" value={form.start_date} onChange={handleChange} />
+              </div>
+              <div className="cp-field">
+                <label className="cp-label">End Date</label>
+                <input className="cp-input" type="date" name="end_date" value={form.end_date} onChange={handleChange} />
+              </div>
+            </div>
+
+            <div className="cp-field">
+              <label className="cp-label">Budget (₱)</label>
+              <input
+                className="cp-input"
+                type="number"
+                name="budget"
+                placeholder="0.00"
+                value={form.budget}
+                onChange={handleChange}
+              />
+            </div>
+
+            <div className="cp-field">
+              <label className="cp-label">Nature and Significance</label>
+              <textarea
+                className="cp-textarea"
+                name="nature_and_significance"
+                placeholder="Describe the background and significance of this research..."
+                value={form.nature_and_significance}
+                onChange={handleChange}
+              />
+            </div>
+
+            <div className="cp-field">
+              <label className="cp-label">Methodology</label>
+              <textarea
+                className="cp-textarea"
+                name="methodology"
+                placeholder="Describe the research methodology..."
+                value={form.methodology}
+                onChange={handleChange}
+              />
+            </div>
           </div>
 
           {/* Action Buttons */}
           <div className="cp-form-actions">
-            <button
-              className="cp-btn"
-              onClick={() => navigate("/researcher/projects")}
-            >
+            <button className="cp-btn" onClick={() => navigate("/researcher/projects")}>
               Cancel
             </button>
             <button
               className="cp-btn primary"
-              style={{
-                background: "#1f7a1f",
-                borderColor: "#1f7a1f",
-                display: "flex",
-                alignItems: "center",
-                gap: 7,
-              }}
+              style={{ background: "#1f7a1f", borderColor: "#1f7a1f", display: "flex", alignItems: "center", gap: 7 }}
+              onClick={handleSubmit}
+              disabled={loading}
             >
               <FileText size={14} />
-              Create Project
+              {loading ? "Creating..." : "Create Project"}
             </button>
           </div>
 

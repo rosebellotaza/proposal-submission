@@ -1,16 +1,10 @@
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Package } from "lucide-react";
 import Navbar from "../../components/researcher/Navbar";
 import Topbar from "../../components/Topbar";
 import "../../styles/researcher.css";
-
-const projects = [
-  { id: "PRJ-001", title: "Climate Change Impact on Coastal Ecosystems",       dept: "Environmental Science", status: "Approved" },
-  { id: "PRJ-002", title: "AI-Driven Healthcare Diagnosis System",              dept: "Computer Science",      status: "Under Evaluation" },
-  { id: "PRJ-003", title: "Sustainable Agriculture Practices in Arid Regions", dept: "Agriculture",           status: "In Progress" },
-  { id: "PRJ-004", title: "Quantum Computing for Cryptography",                 dept: "Physics",               status: "Submitted" },
-  { id: "PRJ-005", title: "Urban Planning and Smart City Infrastructure",       dept: "Civil Engineering",     status: "Draft" },
-];
+import api from "../../utils/api";
 
 const STATUS_STYLES = {
   "Approved":         { bg: "#dcfce7", color: "#15803d" },
@@ -22,6 +16,15 @@ const STATUS_STYLES = {
 
 export default function Outputs() {
   const navigate = useNavigate();
+  const [projects, setProjects] = useState([]);
+  const [loading,  setLoading]  = useState(true);
+
+  useEffect(() => {
+    api.get("/projects")
+      .then((res) => setProjects(res.data))
+      .finally(() => setLoading(false));
+  }, []);
+
   return (
     <div className="dashboard-layout">
       <Navbar />
@@ -40,15 +43,19 @@ export default function Outputs() {
               Click on a project to view its outputs
             </p>
             <div style={{ display: "flex", flexDirection: "column" }}>
+              {loading && <p style={{ color: "#9ca3af", fontSize: 14 }}>Loading...</p>}
+              {!loading && projects.length === 0 && (
+                <p style={{ color: "#9ca3af", fontSize: 14 }}>No projects found.</p>
+              )}
               {projects.map((p, i) => {
-                const s = STATUS_STYLES[p.status];
+                const s = STATUS_STYLES[p.status] || STATUS_STYLES["Draft"];
                 return (
                   <div key={p.id} className="wp-project-row"
                     style={{ borderTop: i === 0 ? "1px solid #f3f4f6" : "none" }}
                     onClick={() => navigate(`/researcher/outputs/${p.id}`)}>
                     <div>
                       <p className="wp-project-title">{p.title}</p>
-                      <p className="wp-project-sub">{p.id} • {p.dept}</p>
+                      <p className="wp-project-sub">{p.reference_no}</p>
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                       <span className="badge" style={{ background: s.bg, color: s.color }}>{p.status}</span>
