@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Plus, Package } from "lucide-react";
 import Navbar from "../../components/researcher/Navbar";
 import Topbar from "../../components/Topbar";
 import "../../styles/researcher.css";
 import api from "../../utils/api";
+import { ArrowLeft, Plus, Package, Trash2 } from "lucide-react";
 
 const STATUS_BADGE = {
   "Approved":         { bg: "#dcfce7", color: "#15803d" },
@@ -97,27 +97,37 @@ export default function OutputsDetail() {
               {outputs.map((o) => {
                 const os = OUTPUT_STATUS_BADGE[o.status] || OUTPUT_STATUS_BADGE["Pending"];
                 return (
-                  <div key={o.id} className="ref-card">
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                        <Package size={18} color="#1f7a1f" />
-                        <div>
-                          <p style={{ fontWeight: 600, fontSize: 14, color: "#111827", margin: "0 0 4px" }}>
-                            {o.output_type}
-                          </p>
-                          <p style={{ fontSize: 13, color: "#6b7280", margin: 0 }}>{o.description}</p>
-                          {o.target_date && (
-                            <p style={{ fontSize: 12, color: "#9ca3af", margin: "4px 0 0" }}>
-                              Target: {new Date(o.target_date).toLocaleDateString()}
+                    <div key={o.id} className="ref-card" style={{ position: "relative" }}>
+                      <button
+                        onClick={async () => {
+                          if (!confirm("Delete this output?")) return;
+                          await api.delete(`/projects/${id}/outputs/${o.id}`);
+                          setOutputs((p) => p.filter((x) => x.id !== o.id));
+                        }}
+                        style={{ position: "absolute", top: 8, right: 8, background: "none", border: "none", cursor: "pointer", color: "#dc2626", padding: 4 }}
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                          <Package size={18} color="#1f7a1f" />
+                          <div>
+                            <p style={{ fontWeight: 600, fontSize: 14, color: "#111827", margin: "0 0 4px" }}>
+                              {o.output_type}
                             </p>
-                          )}
+                            <p style={{ fontSize: 13, color: "#6b7280", margin: 0 }}>{o.description}</p>
+                            {o.target_date && (
+                              <p style={{ fontSize: 12, color: "#9ca3af", margin: "4px 0 0" }}>
+                                Target: {new Date(o.target_date).toLocaleDateString()}
+                              </p>
+                            )}
+                          </div>
                         </div>
+                        <span className="badge" style={{ background: os.bg, color: os.color, flexShrink: 0 }}>
+                          {o.status}
+                        </span>
                       </div>
-                      <span className="badge" style={{ background: os.bg, color: os.color, flexShrink: 0 }}>
-                        {o.status}
-                      </span>
                     </div>
-                  </div>
                 );
               })}
             </div>

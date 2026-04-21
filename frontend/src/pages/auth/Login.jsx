@@ -9,6 +9,7 @@ import { loginUser, dashboardRoute } from "../../utils/auth";
 const roleThemes = {
   researcher: { color: "#1a6b1a", light: "#e6f4ea" },
   evaluator:  { color: "#6a0dad", light: "#f3e8ff" },
+  admin:      { color: "#1d4ed8", light: "#eff6ff" },
 };
 
 export default function Login() {
@@ -18,7 +19,7 @@ export default function Login() {
   const [error,    setError]    = useState("");
   const [loading,  setLoading]  = useState(false);
   const navigate = useNavigate();
-  const theme = roleThemes[role];
+  const theme = roleThemes[role] || roleThemes.researcher;
 
   const handleSignIn = async () => {
     setError("");
@@ -73,6 +74,11 @@ export default function Login() {
               <select value={role} onChange={(e) => setRole(e.target.value)}>
                 <option value="researcher">Researcher</option>
                 <option value="evaluator">Evaluator</option>
+                <option value="admin">Admin</option>
+                <option value="rde_division_chief">RDE Division Chief</option>
+                <option value="campus_director">Campus Director</option>
+                <option value="vprie">VPRIE</option>
+                <option value="president">University President</option>
               </select>
               <span className="select-dot" />
             </div>

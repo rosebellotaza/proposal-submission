@@ -29,6 +29,13 @@ import Evaluations from "./pages/evaluator/Evaluations";
 import EvaluatorStatusTracking from "./pages/evaluator/StatusTracking";
 
 
+// Admin pages
+import AdminDashboard from "./pages/admin/Dashboard";
+import AdminSchedule from "./pages/admin/Schedule";
+import AdminUsers from "./pages/admin/Users";
+
+// Approver page
+import ApproverDashboard from "./pages/approver/Dashboard";
 
 // Styles
 import "./App.css";
@@ -209,6 +216,40 @@ function App() {
 
         {/* 404 FALLBACK */}
         <Route path="*" element={<h1>404 - Page Not Found</h1>} />
+
+        {/* ADMIN ROUTES */}
+          <Route
+            path="/admin/dashboard"
+            element={
+              <ProtectedRoute allowedRoles={["admin"]}>
+                <AdminDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/schedule"
+            element={
+              <ProtectedRoute allowedRoles={["admin"]}>
+                <AdminSchedule />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/users"
+            element={
+              <ProtectedRoute allowedRoles={["admin"]}>
+                <AdminUsers />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/approver/dashboard"
+            element={
+              <ProtectedRoute allowedRoles={["rde_division_chief", "campus_director", "vprie", "president"]}>
+                <ApproverDashboard />
+              </ProtectedRoute>
+            }
+          />
 
       </Routes>
     </Router>

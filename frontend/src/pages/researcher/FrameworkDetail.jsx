@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Plus } from "lucide-react";
+import { ArrowLeft, Plus, Trash2 } from "lucide-react";
 import Navbar from "../../components/researcher/Navbar";
 import Topbar from "../../components/Topbar";
 import "../../styles/researcher.css";
@@ -17,16 +17,19 @@ const STATUS_BADGE = {
 export default function FrameworkDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [project,    setProject]    = useState(null);
+  const [project, setProject] = useState(null);
   const [frameworks, setFrameworks] = useState([]);
-  const [showModal,  setShowModal]  = useState(false);
-  const [loading,    setLoading]    = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
     year_no: "1",
     objective: "",
     activities: "",
     performance_indicators: "",
-    target_q1: "", target_q2: "", target_q3: "", target_q4: "",
+    target_q1: "",
+    target_q2: "",
+    target_q3: "",
+    target_q4: "",
     means_of_verification: "",
     key_assumptions: "",
     funding_source: "GAA",
@@ -48,9 +51,17 @@ export default function FrameworkDetail() {
       setFrameworks((p) => [...p, res.data]);
       setShowModal(false);
       setForm({
-        year_no: "1", objective: "", activities: "", performance_indicators: "",
-        target_q1: "", target_q2: "", target_q3: "", target_q4: "",
-        means_of_verification: "", key_assumptions: "", funding_source: "GAA",
+        year_no: "1",
+        objective: "",
+        activities: "",
+        performance_indicators: "",
+        target_q1: "",
+        target_q2: "",
+        target_q3: "",
+        target_q4: "",
+        means_of_verification: "",
+        key_assumptions: "",
+        funding_source: "GAA",
       });
     } catch (err) {
       console.error(err);
@@ -61,7 +72,6 @@ export default function FrameworkDetail() {
 
   const statusStyle = STATUS_BADGE[project?.status] || STATUS_BADGE["Draft"];
 
-  // Group by year
   const grouped = frameworks.reduce((acc, f) => {
     if (!acc[f.year_no]) acc[f.year_no] = [];
     acc[f.year_no].push(f);
@@ -120,6 +130,7 @@ export default function FrameworkDetail() {
                       <th>Q3</th>
                       <th>Q4</th>
                       <th>Funding</th>
+                      <th>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -133,6 +144,18 @@ export default function FrameworkDetail() {
                         <td>{f.target_q3 || "—"}</td>
                         <td>{f.target_q4 || "—"}</td>
                         <td>{f.funding_source || "—"}</td>
+                        <td>
+                          <button
+                            onClick={async () => {
+                              if (!confirm("Delete this row?")) return;
+                              await api.delete(`/projects/${id}/framework/${f.id}`);
+                              setFrameworks((p) => p.filter((x) => x.id !== f.id));
+                            }}
+                            style={{ background: "none", border: "none", cursor: "pointer", color: "#dc2626", padding: 4 }}
+                          >
+                            <Trash2 size={15} />
+                          </button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -166,8 +189,11 @@ export default function FrameworkDetail() {
               <div className="cp-field">
                 <label className="cp-label">Year</label>
                 <div className="cp-select-wrap">
-                  <select className="cp-select" value={form.year_no}
-                    onChange={(e) => setForm({ ...form, year_no: e.target.value })}>
+                  <select
+                    className="cp-select"
+                    value={form.year_no}
+                    onChange={(e) => setForm({ ...form, year_no: e.target.value })}
+                  >
                     <option value="1">Year 1</option>
                     <option value="2">Year 2</option>
                     <option value="3">Year 3</option>
@@ -178,8 +204,11 @@ export default function FrameworkDetail() {
               <div className="cp-field">
                 <label className="cp-label">Funding Source</label>
                 <div className="cp-select-wrap">
-                  <select className="cp-select" value={form.funding_source}
-                    onChange={(e) => setForm({ ...form, funding_source: e.target.value })}>
+                  <select
+                    className="cp-select"
+                    value={form.funding_source}
+                    onChange={(e) => setForm({ ...form, funding_source: e.target.value })}
+                  >
                     <option>GAA</option>
                     <option>STF</option>
                     <option>Others</option>
@@ -191,65 +220,103 @@ export default function FrameworkDetail() {
 
             <div className="cp-field">
               <label className="cp-label">Objective *</label>
-              <textarea className="cp-textarea" style={{ minHeight: 60 }} placeholder="Enter objective"
-                value={form.objective} onChange={(e) => setForm({ ...form, objective: e.target.value })} />
+              <textarea
+                className="cp-textarea"
+                style={{ minHeight: 60 }}
+                placeholder="Enter objective"
+                value={form.objective}
+                onChange={(e) => setForm({ ...form, objective: e.target.value })}
+              />
             </div>
 
             <div className="cp-field">
               <label className="cp-label">Activities *</label>
-              <textarea className="cp-textarea" style={{ minHeight: 60 }} placeholder="Enter activities"
-                value={form.activities} onChange={(e) => setForm({ ...form, activities: e.target.value })} />
+              <textarea
+                className="cp-textarea"
+                style={{ minHeight: 60 }}
+                placeholder="Enter activities"
+                value={form.activities}
+                onChange={(e) => setForm({ ...form, activities: e.target.value })}
+              />
             </div>
 
             <div className="cp-field">
               <label className="cp-label">Performance Indicators</label>
-              <input className="cp-input" placeholder="Enter performance indicators"
+              <input
+                className="cp-input"
+                placeholder="Enter performance indicators"
                 value={form.performance_indicators}
-                onChange={(e) => setForm({ ...form, performance_indicators: e.target.value })} />
+                onChange={(e) => setForm({ ...form, performance_indicators: e.target.value })}
+              />
             </div>
 
             <div className="cp-grid-2">
               <div className="cp-field">
                 <label className="cp-label">Target Q1</label>
-                <input className="cp-input" placeholder="Q1 target"
-                  value={form.target_q1} onChange={(e) => setForm({ ...form, target_q1: e.target.value })} />
+                <input
+                  className="cp-input"
+                  placeholder="Q1 target"
+                  value={form.target_q1}
+                  onChange={(e) => setForm({ ...form, target_q1: e.target.value })}
+                />
               </div>
               <div className="cp-field">
                 <label className="cp-label">Target Q2</label>
-                <input className="cp-input" placeholder="Q2 target"
-                  value={form.target_q2} onChange={(e) => setForm({ ...form, target_q2: e.target.value })} />
+                <input
+                  className="cp-input"
+                  placeholder="Q2 target"
+                  value={form.target_q2}
+                  onChange={(e) => setForm({ ...form, target_q2: e.target.value })}
+                />
               </div>
               <div className="cp-field">
                 <label className="cp-label">Target Q3</label>
-                <input className="cp-input" placeholder="Q3 target"
-                  value={form.target_q3} onChange={(e) => setForm({ ...form, target_q3: e.target.value })} />
+                <input
+                  className="cp-input"
+                  placeholder="Q3 target"
+                  value={form.target_q3}
+                  onChange={(e) => setForm({ ...form, target_q3: e.target.value })}
+                />
               </div>
               <div className="cp-field">
                 <label className="cp-label">Target Q4</label>
-                <input className="cp-input" placeholder="Q4 target"
-                  value={form.target_q4} onChange={(e) => setForm({ ...form, target_q4: e.target.value })} />
+                <input
+                  className="cp-input"
+                  placeholder="Q4 target"
+                  value={form.target_q4}
+                  onChange={(e) => setForm({ ...form, target_q4: e.target.value })}
+                />
               </div>
             </div>
 
             <div className="cp-field">
               <label className="cp-label">Means of Verification</label>
-              <input className="cp-input" placeholder="How to verify completion"
+              <input
+                className="cp-input"
+                placeholder="How to verify completion"
                 value={form.means_of_verification}
-                onChange={(e) => setForm({ ...form, means_of_verification: e.target.value })} />
+                onChange={(e) => setForm({ ...form, means_of_verification: e.target.value })}
+              />
             </div>
 
             <div className="cp-field">
               <label className="cp-label">Key Assumptions</label>
-              <input className="cp-input" placeholder="Key assumptions"
+              <input
+                className="cp-input"
+                placeholder="Key assumptions"
                 value={form.key_assumptions}
-                onChange={(e) => setForm({ ...form, key_assumptions: e.target.value })} />
+                onChange={(e) => setForm({ ...form, key_assumptions: e.target.value })}
+              />
             </div>
 
             <div className="tm-modal-actions">
               <button className="cp-btn" onClick={() => setShowModal(false)}>Cancel</button>
-              <button className="cp-btn primary"
+              <button
+                className="cp-btn primary"
                 style={{ background: "#1f7a1f", borderColor: "#1f7a1f" }}
-                onClick={handleAdd} disabled={loading}>
+                onClick={handleAdd}
+                disabled={loading}
+              >
                 {loading ? "Adding..." : "Add Row"}
               </button>
             </div>

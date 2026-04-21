@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Plus, BookOpen, FileText, BookMarked, Link, Search } from "lucide-react";
 import Navbar from "../../components/researcher/Navbar";
 import Topbar from "../../components/Topbar";
 import "../../styles/researcher.css";
 import api from "../../utils/api";
+import { ArrowLeft, Plus, BookOpen, FileText, BookMarked, Link, Search, Trash2 } from "lucide-react";
 
 const STATUS_BADGE = {
   "Approved":         { bg: "#dcfce7", color: "#15803d" },
@@ -168,18 +168,28 @@ export default function ReferencesDetail() {
                 {items.map((ref) => {
                   const ts = TYPE_STYLES[ref.type] || TYPE_STYLES.Journal;
                   return (
-                    <div key={ref.id} className="ref-card">
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                        <span className="ref-type-badge" style={{ background: ts.bg, color: ts.color }}>
-                          {ts.icon} {ref.type}
-                        </span>
-                        <span style={{ fontSize: 13, color: "#9ca3af" }}>({ref.year})</span>
+                      <div key={ref.id} className="ref-card" style={{ position: "relative" }}>
+                        <button
+                          onClick={async () => {
+                            if (!confirm("Delete this reference?")) return;
+                            await api.delete(`/projects/${id}/references/${ref.id}`);
+                            setRefs((p) => p.filter((r) => r.id !== ref.id));
+                          }}
+                          style={{ position: "absolute", top: 8, right: 8, background: "none", border: "none", cursor: "pointer", color: "#dc2626", padding: 4 }}
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                          <span className="ref-type-badge" style={{ background: ts.bg, color: ts.color }}>
+                            {ts.icon} {ref.type}
+                          </span>
+                          <span style={{ fontSize: 13, color: "#9ca3af" }}>({ref.year})</span>
+                        </div>
+                        <p className="ref-authors">{ref.authors}</p>
+                        <p className="ref-title">{ref.title}</p>
+                        {ref.source && <p className="ref-source">{ref.source}</p>}
+                        {ref.doi && <p className="ref-doi">DOI: <span style={{ color: "#2563eb" }}>{ref.doi}</span></p>}
                       </div>
-                      <p className="ref-authors">{ref.authors}</p>
-                      <p className="ref-title">{ref.title}</p>
-                      {ref.source && <p className="ref-source">{ref.source}</p>}
-                      {ref.doi && <p className="ref-doi">DOI: <span style={{ color: "#2563eb" }}>{ref.doi}</span></p>}
-                    </div>
                   );
                 })}
               </div>

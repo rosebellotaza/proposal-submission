@@ -6,22 +6,20 @@ use App\Http\Controllers\Controller;
 use App\Models\Evaluation;
 use App\Models\ResearchProject;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class EvaluationController extends Controller
 {
     // GET /api/evaluations/pending
-    // Returns proposals assigned to this evaluator that are not yet evaluated
     public function pending(Request $request)
     {
         $evaluatorId = $request->user()->id;
 
-        // Get project IDs assigned to this evaluator via oral presentations
-        $assignedProjectIds = \DB::table('oral_presentation_evaluators')
+        $assignedProjectIds = DB::table('oral_presentation_evaluators')
             ->join('oral_presentations', 'oral_presentations.id', '=', 'oral_presentation_evaluators.oral_presentation_id')
             ->where('oral_presentation_evaluators.evaluator_id', $evaluatorId)
             ->pluck('oral_presentations.research_project_id');
 
-        // Exclude projects already evaluated by this evaluator
         $evaluatedProjectIds = Evaluation::where('evaluator_id', $evaluatorId)
             ->pluck('research_project_id');
 
@@ -34,7 +32,7 @@ class EvaluationController extends Controller
                 return [
                     'id'     => $p->id,
                     'title'  => $p->title,
-                    'dept'   => $p->departmentCenter?->name ?? $p->creator->name,
+                    'dept'   => $p->departmentCenter?->name ?? $p->creator?->name ?? '',
                     'status' => $p->status,
                 ];
             });
@@ -43,24 +41,24 @@ class EvaluationController extends Controller
     }
 
     // GET /api/evaluations/completed
-    // Returns evaluations already submitted by this evaluator
     public function completed(Request $request)
     {
-        $evaluations = Evaluation::where('evaluator_id', $request->user()->id)
+        $evaluatorId   = $request->user()->id;
+        $evaluatorName = $request->user()->name;
+
+        $evaluations = Evaluation::where('evaluator_id', $evaluatorId)
             ->with('researchProject')
             ->latest()
             ->get()
-            ->map(function ($e) {
+            ->map(function ($e) use ($evaluatorName) {
                 return [
-                    'id'          => $e->id,
-                    'project_id'  => $e->research_project_id,
-                    'title'       => $e->researchProject->title,
-                    'evaluator'   => $request->user()->name,
-                    'date'        => $e->evaluated_at?->format('Y-m-d'),
-                    'score'       => $e->total_score,
-                    'remarks'     => $e->overall_remarks,
-
-                    // Score breakdown
+                    'id'                         => $e->id,
+                    'project_id'                 => $e->research_project_id,
+                    'title'                      => $e->researchProject->title,
+                    'evaluator'                  => $evaluatorName,
+                    'date'                       => $e->evaluated_at?->format('Y-m-d'),
+                    'score'                      => $e->total_score,
+                    'remarks'                    => $e->overall_remarks,
                     'presentation_score'         => $e->presentation_score,
                     'relevance_discipline_score' => $e->relevance_discipline_score,
                     'relevance_rde_score'        => $e->relevance_rde_score,
@@ -73,7 +71,6 @@ class EvaluationController extends Controller
     }
 
     // POST /api/evaluations
-    // Submit an evaluation
     public function store(Request $request)
     {
         $data = $request->validate([
@@ -105,9 +102,9 @@ class EvaluationController extends Controller
             'evaluated_at' => now(),
         ]);
 
-        // Check if ALL assigned evaluators have submitted — if so, advance project status
+        // Check if ALL assigned evaluators have submitted
         $project = ResearchProject::find($data['research_project_id']);
-        $assignedEvaluatorIds = \DB::table('oral_presentation_evaluators')
+        $assignedEvaluatorIds = DB::table('oral_presentation_evaluators')
             ->join('oral_presentations', 'oral_presentations.id', '=', 'oral_presentation_evaluators.oral_presentation_id')
             ->where('oral_presentations.research_project_id', $data['research_project_id'])
             ->pluck('oral_presentation_evaluators.evaluator_id');

@@ -13,6 +13,8 @@ use App\Http\Controllers\Api\OutputController;
 use App\Http\Controllers\Api\StatusTrackingController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\ProposalController;
+use App\Http\Controllers\Api\AdminController;
+use App\Http\Controllers\Api\ApprovalController;
 
 /*
 |--------------------------------------------------------------------------
@@ -28,6 +30,20 @@ Route::post('/login',    [AuthController::class, 'login']);
 |--------------------------------------------------------------------------
 */
 Route::middleware('auth:sanctum')->group(function () {
+
+    // Approval Chain
+    Route::get('/approval/pending',          [ApprovalController::class, 'pending']);
+    Route::post('/approval/act',             [ApprovalController::class, 'act']);
+    Route::get('/approval/history/{id}',     [ApprovalController::class, 'history']);
+
+    // Admin
+    Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
+        Route::get('/proposals',         [AdminController::class, 'proposals']);
+        Route::get('/evaluators',        [AdminController::class, 'evaluators']);
+        Route::post('/schedule',         [AdminController::class, 'schedule']);
+        Route::get('/users',             [AdminController::class, 'users']);
+        Route::put('/users/{id}/toggle', [AdminController::class, 'toggleUser']);
+    });
 
     Route::post('/projects/{id}/proposals', [ProposalController::class, 'store']);
     Route::get('/projects/{id}/proposals',  [ProposalController::class, 'show']);
