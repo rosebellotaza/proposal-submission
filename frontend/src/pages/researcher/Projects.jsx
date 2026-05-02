@@ -47,10 +47,9 @@ export default function ResearchProjects() {
           {/* PAGE HEADER */}
           <div className="page-header">
             <div>
-              <h2 className="page-title">Research Projects</h2>
-              <p className="page-subtitle">Manage and track all research projects</p>
+              <h3 className="page-subtitle">Manage and track all research projects</h3>
             </div>
-            <button className="create-btn" onClick={() => navigate("/researcher/projects/create")}>
+            <button className="create-btn" onClick={() => navigate("/researcher/proposals")}>
               <Plus size={16} /> Create Project
             </button>
           </div>

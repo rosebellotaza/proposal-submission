@@ -28,14 +28,11 @@ export default function Navbar() {
   const menu = [
     { name: "Dashboard",        icon: <LayoutDashboard size={20} />, path: "/researcher/dashboard" },
     { name: "Research Projects", icon: <Folder size={20} />,         path: "/researcher/projects" },
-    { name: "Proposals",         icon: <FileText size={20} />,       path: "/researcher/proposals" },
+    { name: "Proposals",  icon: <FileText size={20} />,       path: "/researcher/proposals" },
     { name: "Team Management",   icon: <Users size={20} />,          path: "/researcher/team" },
-    { name: "Work Plan",         icon: <Calendar size={20} />,       path: "/researcher/work-plan" },
-    { name: "Budget Plan",       icon: <DollarSign size={20} />,     path: "/researcher/budget-plan" },
-    { name: "Framework",         icon: <GitBranch size={20} />,      path: "/researcher/framework" },
-    { name: "References",        icon: <BookOpen size={20} />,       path: "/researcher/references" },
     { name: "Outputs",           icon: <BarChart2 size={20} />,      path: "/researcher/outputs" },
     { name: "Status Tracking",   icon: <Activity size={20} />,       path: "/researcher/status-tracking" },
+    { name: "Profile",   icon: <User size={20} />,       path: "/profile" },
   ];
 
   return (

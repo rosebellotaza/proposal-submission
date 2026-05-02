@@ -181,8 +181,7 @@ export default function Evaluations() {
         <div className="dashboard-content">
 
           <div style={{ marginBottom: 20 }}>
-            <h2 className="page-title">Project Evaluations</h2>
-            <p style={{ margin: 0, fontSize: 13, color: "#6b7280" }}>Review and score submitted research proposals</p>
+            <h3 style={{ margin: 0, fontSize: 13, color: "#6b7280" }}>Review and score submitted research proposals</h3>
           </div>
 
           <div className="ev-split">

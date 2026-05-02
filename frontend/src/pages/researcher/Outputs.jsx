@@ -32,16 +32,12 @@ export default function Outputs() {
         <Topbar title="Outputs" />
         <div className="dashboard-content">
           <div style={{ marginBottom: 20 }}>
-            <h2 className="page-title">Research Outputs</h2>
-            <p style={{ margin: 0, fontSize: 13, color: "#6b7280" }}>
-              Select a project to view and manage its research outputs
-            </p>
+            <h3 style={{ margin: 0, fontSize: 13, color: "#6b7280" }}>
+              Select a project to view its research outputs
+            </h3>
           </div>
           <div className="cp-section">
             <div className="cp-section-title">Your Projects</div>
-            <p style={{ fontSize: 13, color: "#6b7280", margin: "-8px 0 16px" }}>
-              Click on a project to view its outputs
-            </p>
             <div style={{ display: "flex", flexDirection: "column" }}>
               {loading && <p style={{ color: "#9ca3af", fontSize: 14 }}>Loading...</p>}
               {!loading && projects.length === 0 && (

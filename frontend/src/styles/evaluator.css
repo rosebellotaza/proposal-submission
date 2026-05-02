@@ -52,7 +52,7 @@
 .ev-sidebar-menu li:hover  { background: #f5f3ff; }
 
 .ev-sidebar-menu li.active {
-  background: linear-gradient(135deg, #7c3aed, #a855f7);
+  background: #391676;
   color: white;
 }
 

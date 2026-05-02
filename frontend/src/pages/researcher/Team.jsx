@@ -85,8 +85,7 @@ export default function TeamManagement() {
           {/* Page Header */}
           <div className="page-header">
             <div>
-              <h2 className="page-title">Team Management</h2>
-              <p className="page-subtitle">Manage project team members and roles</p>
+              <h3 className="page-subtitle">Manage project team members and roles</h3>
             </div>
             <button className="create-btn" onClick={openAdd}>
               <Plus size={16} /> Add Team Member

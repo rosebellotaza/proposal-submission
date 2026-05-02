@@ -46,7 +46,10 @@ return new class extends Migration
 
             $table->timestamps();
 
-            $table->unique(['oral_presentation_id', 'evaluator_id']);
+            $table->unique(
+            ['oral_presentation_id', 'evaluator_id'],
+            'oral_eval_unique'
+        );
         });
     }
 

@@ -1,41 +1,41 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 
-// Auth صفحات
 import Login from "./pages/auth/Login";
 import SignUp from "./pages/auth/SignUp";
+
 
 // Researcher pages
 import Dashboard from "./pages/researcher/Dashboard";
 import ResearchProject from "./pages/researcher/Projects";
 import CreateProposal from "./pages/researcher/Proposals";
 import ProjectView from "./pages/researcher/ProjectView";
-import ProjectCreate from "./pages/researcher/ProjectCreate";
 import TeamManagement from "./pages/researcher/Team";
-import WorkPlan from "./pages/researcher/WorkPlan";
-import WorkPlanDetail from "./pages/researcher/WorkPlanDetail";
-import BudgetPlan from "./pages/researcher/BudgetPlan";
-import BudgetPlanDetail from "./pages/researcher/BudgetPlanDetail";
-import Framework from "./pages/researcher/Framework";
-import FrameworkDetail from "./pages/researcher/FrameworkDetail";
-import References from "./pages/researcher/References";
-import ReferencesDetail from "./pages/researcher/ReferencesDetail";
 import Outputs from "./pages/researcher/Outputs";
 import OutputsDetail from "./pages/researcher/OutputsDetail";
 import StatusTracking from "./pages/researcher/StatusTracking";
+import Profile from "./pages/researcher/Profile";
 
 //Evaluator pages
 import EvaluatorDashboard from "./pages/evaluator/Dashboard";
 import Evaluations from "./pages/evaluator/Evaluations";
 import EvaluatorStatusTracking from "./pages/evaluator/StatusTracking";
+import EvaluatorProfile from "./pages/evaluator/Profile";
 
 
 // Admin pages
 import AdminDashboard from "./pages/admin/Dashboard";
-import AdminSchedule from "./pages/admin/Schedule";
-import AdminUsers from "./pages/admin/Users";
+import AdminFaculty from "./pages/admin/Faculty";
+import AdminEvaluators from "./pages/admin/evaluators";
+import AdminProposals from "./pages/admin/Proposals";
+import AdminProjects from "./pages/admin/Projects";
+import AdminReports from "./pages/admin/Reports";
+import AdminProfile from "./pages/admin/Profile";
 
 // Approver page
 import ApproverDashboard from "./pages/approver/Dashboard";
+import ApproverPage from "./pages/approver/Approvals";
+import ApproverProfile from "./pages/approver/Profile";
+
 
 // Styles
 import "./App.css";
@@ -68,6 +68,7 @@ function App() {
         {/* AUTH ROUTES */}
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<SignUp />} />
+        <Route path="/profile" element={<Profile />} />
 
         {/* RESEARCHER ROUTES */}
         <Route
@@ -100,15 +101,6 @@ function App() {
         <Route path="/researcher/projects/:id" element={<ProjectView />} />
 
         <Route
-            path="/researcher/projects/create"
-            element={
-              <ProtectedRoute allowedRoles={["researcher"]}>
-                <ProjectCreate />
-              </ProtectedRoute>
-            }
-          />
-
-        <Route
           path="/researcher/team"
           element={
             <ProtectedRoute allowedRoles={["researcher"]}>
@@ -116,52 +108,6 @@ function App() {
             </ProtectedRoute>
           }
         />
-
-        <Route path="/researcher/work-plan" 
-          element={
-            <ProtectedRoute allowedRoles={["researcher"]}>
-              <WorkPlan />
-            </ProtectedRoute>} />
-        <Route path="/researcher/work-plan/:id" 
-          element={
-            <ProtectedRoute allowedRoles={["researcher"]}>
-              <WorkPlanDetail />
-            </ProtectedRoute>} />
-
-        <Route path="/researcher/budget-plan" 
-          element={
-            <ProtectedRoute allowedRoles={["researcher"]}>
-              <BudgetPlan />
-            </ProtectedRoute>} />
-        <Route path="/researcher/budget-plan/:id" 
-          element={
-            <ProtectedRoute allowedRoles={["researcher"]}>
-              <BudgetPlanDetail />
-            </ProtectedRoute>} />
-
-        <Route path="/researcher/framework" 
-          element={
-            <ProtectedRoute allowedRoles={["researcher"]}>
-              <Framework />
-            </ProtectedRoute>} />
-
-        <Route path="/researcher/framework/:id" 
-          element={
-            <ProtectedRoute allowedRoles={["researcher"]}>
-              <FrameworkDetail />
-            </ProtectedRoute>} />
-
-        <Route path="/researcher/references" 
-          element={
-            <ProtectedRoute allowedRoles={["researcher"]}>
-              <References />
-            </ProtectedRoute>} />
-
-        <Route path="/researcher/references/:id" 
-          element={
-            <ProtectedRoute allowedRoles={["researcher"]}>
-              <ReferencesDetail />
-            </ProtectedRoute>} />
 
         <Route path="/researcher/outputs" 
           element={
@@ -188,7 +134,7 @@ function App() {
         <Route
         path="/evaluator/dashboard"
           element={
-            <ProtectedRoute allowedRoles={["evaluator"]}>
+            <ProtectedRoute allowedRoles={["evaluator","rde_division_chief", "campus_director"]}>
               <EvaluatorDashboard />
             </ProtectedRoute>
           }
@@ -196,7 +142,7 @@ function App() {
 
         <Route path="/evaluator/evaluations"
           element={
-          <ProtectedRoute allowedRoles={["evaluator"]}>
+          <ProtectedRoute allowedRoles={["evaluator","rde_division_chief", "campus_director"]}>
             <Evaluations />
           </ProtectedRoute>}
         />
@@ -204,8 +150,16 @@ function App() {
         <Route
           path="/evaluator/status-tracking"
           element={
-            <ProtectedRoute allowedRoles={["evaluator"]}>
+            <ProtectedRoute allowedRoles={["evaluator","rde_division_chief", "campus_director"]}>
               <EvaluatorStatusTracking />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/evaluator/profile"
+          element={
+            <ProtectedRoute allowedRoles={["evaluator","rde_division_chief", "campus_director"]}>
+              <EvaluatorProfile />
             </ProtectedRoute>
           }
         />
@@ -227,30 +181,80 @@ function App() {
             }
           />
           <Route
-            path="/admin/schedule"
+            path="/admin/faculty"
             element={
               <ProtectedRoute allowedRoles={["admin"]}>
-                <AdminSchedule />
+                <AdminFaculty />
               </ProtectedRoute>
             }
           />
           <Route
-            path="/admin/users"
+            path="/admin/evaluators"
             element={
               <ProtectedRoute allowedRoles={["admin"]}>
-                <AdminUsers />
+                <AdminEvaluators />
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/admin/proposals"
+            element={
+              <ProtectedRoute allowedRoles={["admin"]}>
+                <AdminProposals />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/projects"
+            element={
+              <ProtectedRoute allowedRoles={["admin"]}>
+                <AdminProjects />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/reports"
+            element={
+              <ProtectedRoute allowedRoles={["admin"]}>
+                <AdminReports />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/profile"
+            element={
+              <ProtectedRoute allowedRoles={["admin"]}>
+                <AdminProfile />
+              </ProtectedRoute>
+            }
+          />
+
           <Route
             path="/approver/dashboard"
             element={
-              <ProtectedRoute allowedRoles={["rde_division_chief", "campus_director", "vprie", "president"]}>
+              <ProtectedRoute allowedRoles={["vprie", "president"]}>
                 <ApproverDashboard />
               </ProtectedRoute>
             }
           />
 
+          <Route
+            path="/approver/approvals"
+            element={
+              <ProtectedRoute allowedRoles={["vprie", "president"]}>
+                <ApproverPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/approver/profile"
+            element={
+              <ProtectedRoute allowedRoles={["vprie", "president"]}>
+                <ApproverProfile />
+              </ProtectedRoute>
+            }
+          />
+          
       </Routes>
     </Router>
   );

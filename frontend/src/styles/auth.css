@@ -35,10 +35,8 @@
   max-width: 420px;
   padding: 40px 35px;
   border-radius: 16px;
-
   background: rgba(255, 255, 255, 0.75);
   backdrop-filter: blur(12px);
-
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
 }
 
@@ -64,68 +62,6 @@ h2 {
   margin-bottom: 5px;
 }
 
-.subtitle {
-  text-align: center;
-  font-size: 14px;
-  color: #777;
-  margin-bottom: 25px;
-}
-
-/* INPUTS */
-label {
-  font-size: 13px;
-  color: #444;
-}
-
-input,
-select {
-  width: 100%;
-  padding: 12px;
-  margin-top: 6px;
-  border-radius: 8px;
-  border: 1px solid #ddd;
-  font-size: 14px;
-  transition: 0.2s;
-}
-
-select {
-  background-color: var(--light-color);
-}
-
-input:focus,
-select:focus {
-  border-color: var(--main-color);
-  box-shadow: 0 0 0 2px rgba(0,0,0,0.03);
-}
-
-/* BUTTON */
-.primary-btn {
-  width: 100%;
-  padding: 14px;
-  margin-top: 20px;
-  border-radius: 8px;
-  font-weight: 600;
-  color: white;
-  background-color: var(--main-color);
-  box-shadow: 0 8px 18px rgba(0,0,0,0.12);
-  transition: 0.2s;
-}
-
-.primary-btn:hover {
-  transform: translateY(-1px);
-}
-
-/* LINK */
-.signup {
-  text-align: center;
-  margin-top: 15px;
-}
-
-.signup span {
-  color: var(--main-color);
-  cursor: pointer;
-}
-
 /* RESPONSIVE */
 @media (max-width: 900px) {
   .split-container {
@@ -141,7 +77,10 @@ select:focus {
   }
 }
 
-/*AUTH PAGE SPECIFIC */
+/* ═══════════════════════════════════════════════════════
+   AUTH PAGE
+═══════════════════════════════════════════════════════ */
+
 /* ── Background ── */
 .auth-bg {
   min-height: 100vh;
@@ -229,7 +168,7 @@ select:focus {
   margin: 0 0 20px;
 }
 
-/* ── Form Fields ── */
+/* ── Form Group ── */
 .form-group {
   margin-bottom: 14px;
 }
@@ -242,6 +181,7 @@ select:focus {
   margin-bottom: 5px;
 }
 
+/* ── Plain inputs ── */
 .form-group input {
   width: 100%;
   padding: 10px 14px;
@@ -250,60 +190,35 @@ select:focus {
   font-size: 0.93rem;
   outline: none;
   box-sizing: border-box;
-  transition: border-color 0.2s;
   background: white;
+  color: #111827;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .form-group input:focus {
-  border-color: var(--main-color);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--main-color) 15%, transparent);
+  border-color: var(--main-color, #1f7a1f);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--main-color, #1f7a1f) 15%, transparent);
 }
 
-/* ── Role Select ── */
-.select-wrapper {
-  position: relative;
-}
-
-.select-wrapper select {
-  width: 100%;
-  padding: 10px 36px 10px 14px;
-  border: 1.5px solid var(--main-color);
+/* ── Error box ── */
+.auth-error {
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
   border-radius: 8px;
-  font-size: 0.93rem;
-  outline: none;
-  box-sizing: border-box;
-  appearance: none;
-  background: white;
-  color: #111827;
-  cursor: pointer;
-  transition: border-color 0.2s;
+  padding: 10px 14px;
+  font-size: 13px;
+  margin-bottom: 14px;
 }
 
-.select-wrapper select:focus {
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--main-color) 15%, transparent);
-}
-
-.select-dot {
-  position: absolute;
-  right: 14px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: var(--main-color);
-  pointer-events: none;
-}
-
-/* ── Button ── */
+/* ── Primary button — background set inline per role ── */
 .primary-btn {
   width: 100%;
-  padding: 12px;
-  background: var(--main-color, #1a6b1a);
-  color: white;
+  padding: 12px 0;
   border: none;
-  border-radius: 8px;
-  font-size: 1rem;
+  border-radius: 10px;
+  color: #fff;
+  font-size: 15px;
   font-weight: 600;
   cursor: pointer;
   display: flex;
@@ -311,14 +226,20 @@ select:focus {
   justify-content: center;
   gap: 8px;
   margin-top: 6px;
-  transition: filter 0.2s;
+  box-sizing: border-box;
+  transition: filter 0.15s, opacity 0.15s;
 }
 
-.primary-btn:hover {
-  filter: brightness(1.1);
+.primary-btn:hover:not(:disabled) {
+  filter: brightness(0.88);
 }
 
-/* ── Bottom Link ── */
+.primary-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ── Auth link — color set inline per role ── */
 .auth-link {
   text-align: center;
   margin-top: 16px;
@@ -327,12 +248,40 @@ select:focus {
 }
 
 .auth-link span {
-  color: var(--main-color);
   font-weight: 700;
   cursor: pointer;
-  text-decoration: none;
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 .auth-link span:hover {
-  text-decoration: underline;
+  opacity: 0.75;
+}
+
+/* ── Password show/hide toggle ── */
+.pw-wrap {
+  position: relative;
+}
+
+.pw-wrap input {
+  padding-right: 42px !important;
+}
+
+.pw-toggle {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  color: #9ca3af;
+  transition: color 0.15s;
+}
+
+.pw-toggle:hover {
+  color: #6b7280;
 }

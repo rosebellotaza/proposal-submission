@@ -64,10 +64,9 @@ export default function StatusTracking() {
         <div className="dashboard-content">
 
           <div style={{ marginBottom: 20 }}>
-            <h2 className="page-title">Proposal Status Tracking</h2>
-            <p style={{ margin: 0, fontSize: 13, color: "#6b7280" }}>
+            <h3 style={{ margin: 0, fontSize: 13, color: "#6b7280" }}>
               View detailed status history and timeline
-            </p>
+            </h3>
           </div>
 
           {/* Project Selector */}
@@ -151,38 +150,6 @@ export default function StatusTracking() {
               })}
             </div>
           </div>
-
-          {/* Stats */}
-          <div className="st-stats">
-            <div className="st-stat-card">
-              <div className="st-stat-icon" style={{ background: "#f0fdf4" }}>
-                <Clock size={22} color="#1f7a1f" />
-              </div>
-              <div>
-                <p className="st-stat-value">{history.length}</p>
-                <p className="st-stat-label">Status Changes</p>
-              </div>
-            </div>
-            <div className="st-stat-card">
-              <div className="st-stat-icon" style={{ background: "#eff6ff" }}>
-                <CheckCircle2 size={22} color="#2563eb" />
-              </div>
-              <div>
-                <p className="st-stat-value">{project?.current_status || "—"}</p>
-                <p className="st-stat-label">Current Status</p>
-              </div>
-            </div>
-            <div className="st-stat-card">
-              <div className="st-stat-icon" style={{ background: "#fefce8" }}>
-                <TrendingUp size={22} color="#d97706" />
-              </div>
-              <div>
-                <p className="st-stat-value">{project?.evaluation_score ? `${project.evaluation_score}/100` : "—"}</p>
-                <p className="st-stat-label">Evaluation Score</p>
-              </div>
-            </div>
-          </div>
-
         </div>
       </div>
     </div>

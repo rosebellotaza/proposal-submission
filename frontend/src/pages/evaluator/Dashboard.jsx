@@ -57,7 +57,7 @@ export default function EvaluatorDashboard() {
                     Start evaluating →
                   </span>
                 </div>
-                <div className="card-icon" style={{ background: "#f5f3ff", color: "#7c3aed" }}>
+                <div className="card-icon" style={{ background: "#f5f3ff", color: "#391676" }}>
                   <ClipboardList size={22} />
                 </div>
               </div>
