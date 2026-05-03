@@ -86,6 +86,7 @@ Route::get('/projects/approved', function (Request $request) {
         Route::post('/schedule',         [AdminController::class, 'schedule']);
         Route::get('/users',             [AdminController::class, 'users']);
         Route::put('/users/{id}/toggle', [AdminController::class, 'toggleUser']);
+        Route::put('/users/{id}/update',    [AdminController::class, 'updateUser']);
     });
 
     Route::post('/projects/{id}/proposals', [ProposalController::class, 'store']);

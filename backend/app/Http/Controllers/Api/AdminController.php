@@ -49,6 +49,9 @@ class AdminController extends Controller
                 'department',
                 'position',
                 'rank',
+                'gender',           
+                'contact_number', 
+                'expertise',       
                 'is_active',
                 'created_at',
             ]);
@@ -148,6 +151,8 @@ class AdminController extends Controller
             'expertise'  => 'nullable|string|max:255',
             'is_active'  => 'nullable|boolean',
             'join_date'  => 'nullable|date',
+            'gender'         => 'nullable|string|max:50',
+            'contact_number' => 'nullable|string|max:50',
         ]);
 
         $user->update($data);

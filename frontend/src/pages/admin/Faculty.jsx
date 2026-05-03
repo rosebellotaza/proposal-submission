@@ -27,6 +27,9 @@ const EMPTY_FORM = {
   department: "",
   position: "",
   rank: "",
+  gender: "",
+  contact_number: "",
+  expertise: "",
   status: "Active",
   join_date: "",
   role: "researcher",
@@ -86,6 +89,8 @@ const M = {
   },
   body: {
     padding: "20px 22px 22px",
+    overflowY: "auto",
+    maxHeight: "calc(90vh - 60px)",
   },
   grid: {
     display: "grid",
@@ -205,6 +210,39 @@ function FacultyModal({ initial = EMPTY_FORM, onClose, onSave, saving, error }) 
               </select>
             </Field>
 
+            {/* ── NEW FIELDS ── */}
+            <Field label="Gender">
+              <select
+                style={M.input}
+                value={form.gender || ""}
+                onChange={(e) => set("gender", e.target.value)}
+              >
+                <option value="">— Select Gender —</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+              </select>
+            </Field>
+
+            <Field label="Contact Number">
+              <input
+                style={M.input}
+                placeholder="e.g. 09123456789"
+                value={form.contact_number || ""}
+                onChange={(e) => set("contact_number", e.target.value)}
+              />
+            </Field>
+
+            <Field label="Expertise">
+              <input
+                style={M.input}
+                placeholder="e.g. Machine Learning, Data Science"
+                value={form.expertise || ""}
+                onChange={(e) => set("expertise", e.target.value)}
+              />
+            </Field>
+            {/* ── END NEW FIELDS ── */}
+
             {!isEdit && (
               <Field label="Default Password">
                 <input
@@ -241,18 +279,8 @@ function FacultyModal({ initial = EMPTY_FORM, onClose, onSave, saving, error }) 
             </div>
           )}
 
-          <div
-            style={{
-              display: "flex",
-              gap: 10,
-              justifyContent: "flex-end",
-              marginTop: 8,
-            }}
-          >
-            <button style={M.cancelBtn} onClick={onClose}>
-              Cancel
-            </button>
-
+          <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 8 }}>
+            <button style={M.cancelBtn} onClick={onClose}>Cancel</button>
             <button style={M.saveBtn} onClick={() => onSave(form)} disabled={saving}>
               {saving ? "Saving…" : isEdit ? "Save Changes" : "Add Faculty"}
             </button>
@@ -296,10 +324,7 @@ function DeleteModal({ faculty, onClose, onConfirm, deleting, error }) {
           )}
 
           <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
-            <button style={M.cancelBtn} onClick={onClose}>
-              Cancel
-            </button>
-
+            <button style={M.cancelBtn} onClick={onClose}>Cancel</button>
             <button
               style={{ ...M.saveBtn, background: "#dc2626" }}
               onClick={onConfirm}
@@ -331,9 +356,7 @@ export default function FacultyManagement() {
 
   useEffect(() => {
     const onResize = () => setIsMobile(window.innerWidth < 768);
-
     window.addEventListener("resize", onResize);
-
     return () => window.removeEventListener("resize", onResize);
   }, []);
 
@@ -341,7 +364,6 @@ export default function FacultyManagement() {
     try {
       const response = await api.get("/admin/faculty");
       const data = Array.isArray(response.data) ? response.data : [];
-
       setFaculty(data);
       setFiltered(data);
     } catch {
@@ -352,13 +374,10 @@ export default function FacultyManagement() {
     }
   };
 
-  useEffect(() => {
-    fetchFaculty();
-  }, []);
+  useEffect(() => { fetchFaculty(); }, []);
 
   useEffect(() => {
     const query = search.toLowerCase();
-
     setFiltered(
       faculty.filter(
         (item) =>
@@ -387,6 +406,9 @@ export default function FacultyManagement() {
           department: form.department,
           position: form.position,
           rank: form.rank,
+          gender: form.gender,               // ← NEW
+          contact_number: form.contact_number, // ← NEW
+          expertise: form.expertise,          // ← NEW
           is_active: form.status === "Active",
           join_date: form.join_date,
         });
@@ -400,6 +422,9 @@ export default function FacultyManagement() {
           department: form.department,
           position: form.position,
           rank: form.rank,
+          gender: form.gender,               // ← NEW
+          contact_number: form.contact_number, // ← NEW
+          expertise: form.expertise,          // ← NEW
           is_active: form.status === "Active",
           join_date: form.join_date,
         });
@@ -438,204 +463,61 @@ export default function FacultyManagement() {
   return (
     <>
       <style>{`
-        .fm-table {
-          width:100%;
-          border-collapse:collapse;
-        }
-
-        .fm-table th {
-          padding:12px 16px;
-          text-align:left;
-          font-size:12px;
-          font-weight:600;
-          color:#6b7280;
-          text-transform:uppercase;
-          letter-spacing:.04em;
-          border-bottom:2px solid #e5e7eb;
-          white-space:nowrap;
-        }
-
-        .fm-table td {
-          padding:14px 16px;
-          font-size:13px;
-          color:#374151;
-          border-bottom:1px solid #f1f5f9;
-          vertical-align:middle;
-        }
-
-        .fm-table tr:last-child td {
-          border-bottom:none;
-        }
-
-        .fm-table tr:hover td {
-          background:#fafafa;
-        }
-
-        .fm-cards {
-          display:none;
-          flex-direction:column;
-          gap:12px;
-        }
-
-        @media(max-width:800px) {
-          .fm-table-wrap {
-            display:none;
-          }
-
-          .fm-cards {
-            display:flex;
-          }
-        }
+        .fm-table { width:100%; border-collapse:collapse; }
+        .fm-table th { padding:12px 16px; text-align:left; font-size:12px; font-weight:600; color:#6b7280; text-transform:uppercase; letter-spacing:.04em; border-bottom:2px solid #e5e7eb; white-space:nowrap; }
+        .fm-table td { padding:14px 16px; font-size:13px; color:#374151; border-bottom:1px solid #f1f5f9; vertical-align:middle; }
+        .fm-table tr:last-child td { border-bottom:none; }
+        .fm-table tr:hover td { background:#fafafa; }
+        .fm-cards { display:none; flex-direction:column; gap:12px; }
+        @media(max-width:800px) { .fm-table-wrap { display:none; } .fm-cards { display:flex; } }
       `}</style>
 
       <div style={{ display: "flex", minHeight: "100vh", background: "#f3f4f6" }}>
         <AdminNavbar onWidthChange={setSidebarWidth} />
 
-        <div
-          style={{
-            marginLeft: ml,
-            flex: 1,
-            display: "flex",
-            flexDirection: "column",
-            transition: "margin-left 0.22s ease",
-            minWidth: 0,
-          }}
-        >
+        <div style={{ marginLeft: ml, flex: 1, display: "flex", flexDirection: "column", transition: "margin-left 0.22s ease", minWidth: 0 }}>
           <Topbar title="Faculty Management" />
 
           <div style={{ padding: "24px", flex: 1 }}>
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "flex-start",
-                marginBottom: 24,
-                flexWrap: "wrap",
-                gap: 12,
-              }}
-            >
-              <h3 style={{ margin: 0, fontSize: 13, color: "#6b7280" }}>
-                Manage faculty members and researchers
-              </h3>
-
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 24, flexWrap: "wrap", gap: 12 }}>
+              <h3 style={{ margin: 0, fontSize: 13, color: "#6b7280" }}>Manage faculty members and researchers</h3>
               <button
-                onClick={() => {
-                  setSaveError("");
-                  setShowAdd(true);
-                }}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 8,
-                  padding: "10px 20px",
-                  borderRadius: 9,
-                  border: "none",
-                  background: "#f59e0b",
-                  color: "#fff",
-                  fontWeight: 600,
-                  fontSize: 14,
-                  cursor: "pointer",
-                  boxShadow: "0 2px 6px rgba(245,158,11,0.35)",
-                }}
+                onClick={() => { setSaveError(""); setShowAdd(true); }}
+                style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 20px", borderRadius: 9, border: "none", background: "#f59e0b", color: "#fff", fontWeight: 600, fontSize: 14, cursor: "pointer", boxShadow: "0 2px 6px rgba(245,158,11,0.35)" }}
               >
                 <UserPlus size={17} /> Add Faculty
               </button>
             </div>
 
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr auto",
-                gap: 16,
-                marginBottom: 20,
-                alignItems: "stretch",
-              }}
-            >
-              <div
-                style={{
-                  background: "#fff",
-                  border: "1px solid #e5e7eb",
-                  borderRadius: 12,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 10,
-                  padding: "0 16px",
-                  boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
-                }}
-              >
+            <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 16, marginBottom: 20, alignItems: "stretch" }}>
+              <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, display: "flex", alignItems: "center", gap: 10, padding: "0 16px", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
                 <Search size={18} color="#9ca3af" strokeWidth={1.8} />
-
                 <input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search by name, email, or department..."
-                  style={{
-                    flex: 1,
-                    border: "none",
-                    outline: "none",
-                    fontSize: 14,
-                    color: "#111827",
-                    padding: "14px 0",
-                    background: "transparent",
-                  }}
+                  style={{ flex: 1, border: "none", outline: "none", fontSize: 14, color: "#111827", padding: "14px 0", background: "transparent" }}
                 />
               </div>
 
-              <div
-                style={{
-                  background: "#fefce8",
-                  border: "1px solid #fde68a",
-                  borderRadius: 12,
-                  padding: "14px 28px",
-                  textAlign: "center",
-                  minWidth: 140,
-                  boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
-                }}
-              >
-                <p style={{ margin: 0, fontSize: 28, fontWeight: 800, color: "#111827" }}>
-                  {filtered.length}
-                </p>
-
-                <p style={{ margin: "2px 0 0", fontSize: 13, color: "#6b7280" }}>
-                  Total Faculty
-                </p>
+              <div style={{ background: "#fefce8", border: "1px solid #fde68a", borderRadius: 12, padding: "14px 28px", textAlign: "center", minWidth: 140, boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
+                <p style={{ margin: 0, fontSize: 28, fontWeight: 800, color: "#111827" }}>{filtered.length}</p>
+                <p style={{ margin: "2px 0 0", fontSize: 13, color: "#6b7280" }}>Total Faculty</p>
               </div>
             </div>
 
-            <div
-              style={{
-                background: "#fff",
-                borderRadius: 12,
-                border: "1px solid #e5e7eb",
-                boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
-                overflow: "hidden",
-              }}
-            >
+            <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #e5e7eb", boxShadow: "0 1px 3px rgba(0,0,0,0.04)", overflow: "hidden" }}>
               <div style={{ padding: "16px 22px", borderBottom: "1px solid #f1f5f9" }}>
-                <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: "#111827" }}>
-                  Faculty List
-                </h3>
+                <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: "#111827" }}>Faculty List</h3>
               </div>
 
               {loading ? (
-                <p style={{ padding: 24, color: "#9ca3af", fontSize: 14 }}>
-                  Loading…
-                </p>
+                <p style={{ padding: 24, color: "#9ca3af", fontSize: 14 }}>Loading…</p>
               ) : filtered.length === 0 ? (
                 <div style={{ padding: "48px 24px", textAlign: "center" }}>
-                  <UserPlus
-                    size={40}
-                    color="#d1d5db"
-                    style={{ margin: "0 auto 12px", display: "block" }}
-                  />
-
-                  <p style={{ margin: 0, fontSize: 15, fontWeight: 600, color: "#374151" }}>
-                    No faculty yet
-                  </p>
-
-                  <p style={{ margin: "6px 0 0", fontSize: 13, color: "#9ca3af" }}>
-                    Click <strong>Add Faculty</strong> to get started.
-                  </p>
+                  <UserPlus size={40} color="#d1d5db" style={{ margin: "0 auto 12px", display: "block" }} />
+                  <p style={{ margin: 0, fontSize: 15, fontWeight: 600, color: "#374151" }}>No faculty yet</p>
+                  <p style={{ margin: "6px 0 0", fontSize: 13, color: "#9ca3af" }}>Click <strong>Add Faculty</strong> to get started.</p>
                 </div>
               ) : (
                 <>
@@ -643,58 +525,30 @@ export default function FacultyManagement() {
                     <table className="fm-table">
                       <thead>
                         <tr>
-                          {["#", "Name", "Email", "Department", "Position", "Status", "Actions"].map(
-                            (heading) => (
-                              <th key={heading}>{heading}</th>
-                            )
-                          )}
+                          {["#", "Name", "Email", "Department", "Position", "Gender", "Contact", "Expertise", "Status", "Actions"].map((h) => (
+                            <th key={h}>{h}</th>
+                          ))}
                         </tr>
                       </thead>
-
                       <tbody>
                         {filtered.map((item, index) => {
-                          const statusKey = item.is_active === false ? "Inactive" : item.status || "Active";
-                          const statusStyle = STATUS[statusKey] || STATUS.Active;
-
+                          const statusKey = item.is_active === false ? "Inactive" : "Active";
+                          const statusStyle = STATUS[statusKey];
                           return (
                             <tr key={item.id}>
-                              <td style={{ fontWeight: 600, color: "#9ca3af" }}>
-                                {index + 1}
-                              </td>
-
-                              <td style={{ fontWeight: 600, color: "#111827" }}>
-                                {item.name}
-                              </td>
-
-                              <td style={{ color: "#6b7280" }}>
-                                {item.email}
-                              </td>
-
+                              <td style={{ fontWeight: 600, color: "#9ca3af" }}>{index + 1}</td>
+                              <td style={{ fontWeight: 600, color: "#111827" }}>{item.name}</td>
+                              <td style={{ color: "#6b7280" }}>{item.email}</td>
+                              <td>{item.department || item.department_center?.name || "—"}</td>
+                              <td>{item.position || item.rank || "—"}</td>
+                              <td>{item.gender || "—"}</td>
+                              <td>{item.contact_number || "—"}</td>
+                              <td>{item.expertise || "—"}</td>
                               <td>
-                                {item.department || item.department_center?.name || "—"}
-                              </td>
-
-                              <td>
-                                {item.position || item.rank || "—"}
-                              </td>
-
-                              <td>
-                                <span
-                                  style={{
-                                    display: "inline-block",
-                                    padding: "3px 12px",
-                                    borderRadius: 20,
-                                    fontSize: 12,
-                                    fontWeight: 600,
-                                    background: statusStyle.bg,
-                                    color: statusStyle.color,
-                                    border: `1px solid ${statusStyle.border}`,
-                                  }}
-                                >
+                                <span style={{ display: "inline-block", padding: "3px 12px", borderRadius: 20, fontSize: 12, fontWeight: 600, background: statusStyle.bg, color: statusStyle.color, border: `1px solid ${statusStyle.border}` }}>
                                   {item.is_active === false ? "Inactive" : "Active"}
                                 </span>
                               </td>
-
                               <td>
                                 <div style={{ display: "flex", gap: 8 }}>
                                   <button
@@ -703,38 +557,22 @@ export default function FacultyManagement() {
                                       setEditing({
                                         ...item,
                                         status: item.is_active === false ? "Inactive" : "Active",
-                                        department:
-                                          item.department || item.department_center?.name || "",
+                                        department: item.department || item.department_center?.name || "",
                                         position: item.position || "",
                                         rank: item.rank || "",
+                                        gender: item.gender || "",
+                                        contact_number: item.contact_number || "",
+                                        expertise: item.expertise || "",
                                       });
                                     }}
-                                    style={{
-                                      background: "none",
-                                      border: "none",
-                                      cursor: "pointer",
-                                      padding: 4,
-                                      color: "#6b7280",
-                                      display: "flex",
-                                    }}
+                                    style={{ background: "none", border: "none", cursor: "pointer", padding: 4, color: "#6b7280", display: "flex" }}
                                     title="Edit"
                                   >
                                     <Pencil size={16} />
                                   </button>
-
                                   <button
-                                    onClick={() => {
-                                      setDeleteError("");
-                                      setDeleting(item);
-                                    }}
-                                    style={{
-                                      background: "none",
-                                      border: "none",
-                                      cursor: "pointer",
-                                      padding: 4,
-                                      color: "#dc2626",
-                                      display: "flex",
-                                    }}
+                                    onClick={() => { setDeleteError(""); setDeleting(item); }}
+                                    style={{ background: "none", border: "none", cursor: "pointer", padding: 4, color: "#dc2626", display: "flex" }}
                                     title="Delete"
                                   >
                                     <Trash2 size={16} />
@@ -751,76 +589,24 @@ export default function FacultyManagement() {
                   <div className="fm-cards" style={{ padding: "14px 16px" }}>
                     {filtered.map((item) => {
                       const statusStyle = STATUS[item.is_active === false ? "Inactive" : "Active"];
-
                       return (
-                        <div
-                          key={item.id}
-                          style={{
-                            border: "1px solid #e5e7eb",
-                            borderRadius: 12,
-                            padding: "14px 16px",
-                            background: "#fafafa",
-                          }}
-                        >
-                          <div
-                            style={{
-                              display: "flex",
-                              justifyContent: "space-between",
-                              alignItems: "flex-start",
-                              marginBottom: 10,
-                            }}
-                          >
+                        <div key={item.id} style={{ border: "1px solid #e5e7eb", borderRadius: 12, padding: "14px 16px", background: "#fafafa" }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
                             <div>
-                              <p
-                                style={{
-                                  margin: 0,
-                                  fontSize: 14,
-                                  fontWeight: 700,
-                                  color: "#111827",
-                                }}
-                              >
-                                {item.name}
-                              </p>
-
-                              <p style={{ margin: "2px 0 0", fontSize: 12, color: "#6b7280" }}>
-                                {item.email}
-                              </p>
+                              <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: "#111827" }}>{item.name}</p>
+                              <p style={{ margin: "2px 0 0", fontSize: 12, color: "#6b7280" }}>{item.email}</p>
                             </div>
-
-                            <span
-                              style={{
-                                padding: "3px 12px",
-                                borderRadius: 20,
-                                fontSize: 12,
-                                fontWeight: 600,
-                                background: statusStyle.bg,
-                                color: statusStyle.color,
-                                border: `1px solid ${statusStyle.border}`,
-                              }}
-                            >
+                            <span style={{ padding: "3px 12px", borderRadius: 20, fontSize: 12, fontWeight: 600, background: statusStyle.bg, color: statusStyle.color, border: `1px solid ${statusStyle.border}` }}>
                               {item.is_active === false ? "Inactive" : "Active"}
                             </span>
                           </div>
 
-                          <div
-                            style={{
-                              display: "grid",
-                              gridTemplateColumns: "1fr 1fr",
-                              gap: "5px 12px",
-                              fontSize: 12,
-                              color: "#6b7280",
-                              marginBottom: 12,
-                            }}
-                          >
-                            <span>
-                              <b style={{ color: "#374151" }}>Dept:</b>{" "}
-                              {item.department || item.department_center?.name || "—"}
-                            </span>
-
-                            <span>
-                              <b style={{ color: "#374151" }}>Position:</b>{" "}
-                              {item.position || "—"}
-                            </span>
+                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "5px 12px", fontSize: 12, color: "#6b7280", marginBottom: 12 }}>
+                            <span><b style={{ color: "#374151" }}>Dept:</b> {item.department || item.department_center?.name || "—"}</span>
+                            <span><b style={{ color: "#374151" }}>Position:</b> {item.position || "—"}</span>
+                            <span><b style={{ color: "#374151" }}>Gender:</b> {item.gender || "—"}</span>
+                            <span><b style={{ color: "#374151" }}>Contact:</b> {item.contact_number || "—"}</span>
+                            <span style={{ gridColumn: "1 / -1" }}><b style={{ color: "#374151" }}>Expertise:</b> {item.expertise || "—"}</span>
                           </div>
 
                           <div style={{ display: "flex", gap: 10 }}>
@@ -833,47 +619,18 @@ export default function FacultyManagement() {
                                   department: item.department || item.department_center?.name || "",
                                   position: item.position || "",
                                   rank: item.rank || "",
+                                  gender: item.gender || "",
+                                  contact_number: item.contact_number || "",
+                                  expertise: item.expertise || "",
                                 });
                               }}
-                              style={{
-                                flex: 1,
-                                padding: "8px 0",
-                                borderRadius: 8,
-                                border: "1px solid #e5e7eb",
-                                background: "#fff",
-                                cursor: "pointer",
-                                fontSize: 13,
-                                fontWeight: 500,
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                gap: 6,
-                                color: "#374151",
-                              }}
+                              style={{ flex: 1, padding: "8px 0", borderRadius: 8, border: "1px solid #e5e7eb", background: "#fff", cursor: "pointer", fontSize: 13, fontWeight: 500, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, color: "#374151" }}
                             >
                               <Pencil size={14} /> Edit
                             </button>
-
                             <button
-                              onClick={() => {
-                                setDeleteError("");
-                                setDeleting(item);
-                              }}
-                              style={{
-                                flex: 1,
-                                padding: "8px 0",
-                                borderRadius: 8,
-                                border: "1px solid #fecaca",
-                                background: "#fef2f2",
-                                cursor: "pointer",
-                                fontSize: 13,
-                                fontWeight: 500,
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                gap: 6,
-                                color: "#dc2626",
-                              }}
+                              onClick={() => { setDeleteError(""); setDeleting(item); }}
+                              style={{ flex: 1, padding: "8px 0", borderRadius: 8, border: "1px solid #fecaca", background: "#fef2f2", cursor: "pointer", fontSize: 13, fontWeight: 500, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, color: "#dc2626" }}
                             >
                               <Trash2 size={14} /> Delete
                             </button>
@@ -889,34 +646,9 @@ export default function FacultyManagement() {
         </div>
       </div>
 
-      {showAdd && (
-        <FacultyModal
-          onClose={() => setShowAdd(false)}
-          onSave={handleSave}
-          saving={saving}
-          error={saveError}
-        />
-      )}
-
-      {editing && (
-        <FacultyModal
-          initial={editing}
-          onClose={() => setEditing(null)}
-          onSave={handleSave}
-          saving={saving}
-          error={saveError}
-        />
-      )}
-
-      {deleting && (
-        <DeleteModal
-          faculty={deleting}
-          onClose={() => setDeleting(null)}
-          onConfirm={handleDelete}
-          deleting={isDeleting}
-          error={deleteError}
-        />
-      )}
+      {showAdd && <FacultyModal onClose={() => setShowAdd(false)} onSave={handleSave} saving={saving} error={saveError} />}
+      {editing && <FacultyModal initial={editing} onClose={() => setEditing(null)} onSave={handleSave} saving={saving} error={saveError} />}
+      {deleting && <DeleteModal faculty={deleting} onClose={() => setDeleting(null)} onConfirm={handleDelete} deleting={isDeleting} error={deleteError} />}
     </>
   );
 }
