@@ -17,7 +17,7 @@ import Profile from "./pages/researcher/Profile";
 // Evaluator pages
 import EvaluatorDashboard from "./pages/evaluator/Dashboard";
 import Evaluations from "./pages/evaluator/Evaluations";
-import EvaluatorStatusTracking from "./pages/evaluator/StatusTracking";
+// import EvaluatorStatusTracking from "./pages/evaluator/StatusTracking";
 import EvaluatorProfile from "./pages/evaluator/Profile";
 
 // Admin pages
@@ -68,7 +68,6 @@ function App() {
         {/* EVALUATOR */}
         <Route path="/evaluator/dashboard"       element={<ProtectedRoute allowedRoles={["evaluator"]}><EvaluatorDashboard /></ProtectedRoute>} />
         <Route path="/evaluator/evaluations"     element={<ProtectedRoute allowedRoles={["evaluator"]}><Evaluations /></ProtectedRoute>} />
-        <Route path="/evaluator/status-tracking" element={<ProtectedRoute allowedRoles={["evaluator"]}><EvaluatorStatusTracking /></ProtectedRoute>} />
         <Route path="/evaluator/profile"         element={<ProtectedRoute allowedRoles={["evaluator"]}><EvaluatorProfile /></ProtectedRoute>} />
 
         {/* ADMIN */}

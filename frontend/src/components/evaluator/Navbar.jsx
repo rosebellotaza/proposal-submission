@@ -1,4 +1,4 @@
-import { LayoutDashboard, ClipboardCheck, Activity, User } from "lucide-react";
+import { LayoutDashboard, ClipboardCheck, User } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useState } from "react";
 import logo from "../../assets/logo.png";
@@ -16,7 +16,6 @@ export default function EvaluatorNavbar() {
   const menu = [
     { name: "Dashboard",       icon: <LayoutDashboard size={20} />, path: "/evaluator/dashboard" },
     { name: "Evaluations",     icon: <ClipboardCheck size={20} />,  path: "/evaluator/evaluations" },
-    { name: "Status Tracking", icon: <Activity size={20} />,        path: "/evaluator/status-tracking" },
     { name: "Profile",   icon: <User size={20} />,       path: "/evaluator/profile" },
 
   ];
