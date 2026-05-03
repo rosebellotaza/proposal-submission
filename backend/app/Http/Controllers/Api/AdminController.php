@@ -11,7 +11,6 @@ use Illuminate\Http\Request;
 class AdminController extends Controller
 {
     // GET /api/admin/proposals
-    // Get all submitted proposals waiting for scheduling
     public function proposals(Request $request)
     {
         $proposals = ResearchProject::whereIn('status', [
@@ -33,19 +32,51 @@ class AdminController extends Controller
         return response()->json($proposals);
     }
 
+    // GET /api/admin/faculty
+    // Used by Faculty Management and Proponents dropdown
+    public function faculty()
+    {
+        $faculty = Personnel::where('role', 'researcher')
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get([
+                'id',
+                'name',
+                'email',
+                'role',
+                'college_id',
+                'department_center_id',
+                'department',
+                'position',
+                'rank',
+                'is_active',
+                'created_at',
+            ]);
+
+        return response()->json($faculty);
+    }
+
     // GET /api/admin/evaluators
-    // Get all evaluators available to assign
     public function evaluators()
     {
         $evaluators = Personnel::where('role', 'evaluator')
             ->where('is_active', true)
-            ->get(['id', 'name', 'email', 'rank', 'expertise']);
+            ->orderBy('name')
+            ->get([
+                'id',
+                'name',
+                'email',
+                'rank',
+                'expertise',
+                'position',
+                'is_active',
+                'created_at',
+            ]);
 
         return response()->json($evaluators);
     }
 
     // POST /api/admin/schedule
-    // Schedule an oral presentation and assign evaluators
     public function schedule(Request $request)
     {
         $data = $request->validate([
@@ -57,7 +88,6 @@ class AdminController extends Controller
             'evaluator_ids.*'     => 'exists:personnel,id',
         ]);
 
-        // Create or update oral presentation
         $presentation = OralPresentation::updateOrCreate(
             ['research_project_id' => $data['research_project_id']],
             [
@@ -68,11 +98,9 @@ class AdminController extends Controller
             ]
         );
 
-        // Sync evaluators
         $presentation->evaluators()->sync($data['evaluator_ids']);
 
-        // Update project status
-        $project = ResearchProject::find($data['research_project_id']);
+        $project = ResearchProject::findOrFail($data['research_project_id']);
         $project->update(['status' => 'Presentation Scheduled']);
 
         return response()->json([
@@ -82,7 +110,6 @@ class AdminController extends Controller
     }
 
     // GET /api/admin/users
-    // Get all personnel
     public function users()
     {
         $users = Personnel::with(['college', 'departmentCenter'])
@@ -93,15 +120,52 @@ class AdminController extends Controller
     }
 
     // PUT /api/admin/users/{id}/toggle
-    // Activate or deactivate a user
     public function toggleUser($id)
     {
         $user = Personnel::findOrFail($id);
-        $user->update(['is_active' => !$user->is_active]);
+
+        $user->update([
+            'is_active' => !$user->is_active,
+        ]);
 
         return response()->json([
             'message'   => 'User status updated.',
             'is_active' => $user->is_active,
+        ]);
+    }
+
+    // PUT /api/admin/users/{id}/update
+    public function updateUser(Request $request, $id)
+    {
+        $user = Personnel::findOrFail($id);
+
+        $data = $request->validate([
+            'name'       => 'required|string|max:255',
+            'email'      => 'required|email|max:255|unique:personnel,email,' . $id,
+            'department' => 'nullable|string|max:255',
+            'position'   => 'nullable|string|max:255',
+            'rank'       => 'nullable|string|max:255',
+            'expertise'  => 'nullable|string|max:255',
+            'is_active'  => 'nullable|boolean',
+            'join_date'  => 'nullable|date',
+        ]);
+
+        $user->update($data);
+
+        return response()->json([
+            'message' => 'User updated successfully.',
+            'user'    => $user,
+        ]);
+    }
+
+    // DELETE /api/admin/users/{id}
+    public function deleteUser($id)
+    {
+        $user = Personnel::findOrFail($id);
+        $user->delete();
+
+        return response()->json([
+            'message' => 'User deleted successfully.',
         ]);
     }
 }

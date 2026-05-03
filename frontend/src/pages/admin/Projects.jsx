@@ -1,321 +1,943 @@
-// src/pages/admin/ProjectManagement.jsx
-import { useState, useEffect } from "react";
+// src/pages/admin/Projects.jsx
+import { useEffect, useState } from "react";
 import AdminNavbar from "../../components/admin/navbar";
 import Topbar from "../../components/Topbar";
 import api from "../../utils/api";
 import {
-  Search, FolderOpen, Eye, X, User, DollarSign,
-  Calendar, BookOpen, Users, CheckCircle2,
+  Search,
+  ChevronDown,
+  FolderOpen,
+  Eye,
+  X,
+  User,
+  Calendar,
+  BookOpen,
+  FileText,
+  CheckCircle2,
+  AlertCircle,
 } from "lucide-react";
 
-/* ── mock data ───────────────────────────────────────────── */
-const MOCK = [
-  {
-    id: 1, project_id: "PRJ-001",
-    title: "AI-Driven Healthcare Diagnosis System",
-    researcher: "Prof. Michael Chen", department: "Computer Science",
-    budget: 320000, approved_date: "2026-03-15",
-    status: "Approved", progress: 40,
-    evaluators: ["Dr. Amanda Rodriguez", "Dr. Lisa Park"],
-    description: "An AI-powered system for early diagnosis of critical diseases using machine learning algorithms and patient data analytics.",
-  },
-  {
-    id: 2, project_id: "PRJ-003",
-    title: "Sustainable Farming Techniques",
-    researcher: "Dr. Emily Davis", department: "Agriculture",
-    budget: 180000, approved_date: "2026-02-20",
-    status: "Approved", progress: 65,
-    evaluators: ["Dr. James Thompson"],
-    description: "Research on eco-friendly farming methods to improve crop yield while reducing chemical usage and environmental impact.",
-  },
-  {
-    id: 3, project_id: "PRJ-005",
-    title: "Renewable Energy Storage Solutions",
-    researcher: "Dr. Robert Williams", department: "Physics",
-    budget: 560000, approved_date: "2026-01-10",
-    status: "Approved", progress: 80,
-    evaluators: ["Dr. David Kumar", "Dr. Amanda Rodriguez"],
-    description: "Development of next-generation battery technologies for efficient storage of solar and wind energy.",
-  },
-  {
-    id: 4, project_id: "PRJ-007",
-    title: "Urban Heat Island Mitigation",
-    researcher: "Prof. Sarah Johnson", department: "Environmental Science",
-    budget: 240000, approved_date: "2026-04-01",
-    status: "Approved", progress: 15,
-    evaluators: ["Dr. Lisa Park"],
-    description: "Investigating urban greening strategies to reduce the heat island effect in densely populated metropolitan areas.",
-  },
+const STATUS_STYLE = {
+  Submitted: { bg: "#e0f2fe", color: "#0369a1", border: "#bae6fd" },
+  "Presentation Scheduled": { bg: "#dbeafe", color: "#1d4ed8", border: "#bfdbfe" },
+  "Under Evaluation": { bg: "#ede9fe", color: "#6d28d9", border: "#ddd6fe" },
+  Evaluated: { bg: "#fef3c7", color: "#d97706", border: "#fde68a" },
+  Endorsed: { bg: "#dcfce7", color: "#15803d", border: "#bbf7d0" },
+  Recommended: { bg: "#dcfce7", color: "#15803d", border: "#bbf7d0" },
+  Forwarded: { bg: "#e0f2fe", color: "#0369a1", border: "#bae6fd" },
+  Approved: { bg: "#dcfce7", color: "#15803d", border: "#bbf7d0" },
+  "In Progress": { bg: "#d1fae5", color: "#065f46", border: "#a7f3d0" },
+  Rejected: { bg: "#fef2f2", color: "#dc2626", border: "#fecaca" },
+  "For Revision": { bg: "#fef3c7", color: "#d97706", border: "#fde68a" },
+};
+
+const PROJECT_STATUSES = [
+  "Submitted",
+  "Presentation Scheduled",
+  "Under Evaluation",
+  "Evaluated",
+  "Endorsed",
+  "Recommended",
+  "Forwarded",
+  "Approved",
+  "In Progress",
+  "Rejected",
+  "For Revision",
 ];
 
-/* ── Detail Modal ────────────────────────────────────────── */
-function DetailModal({ project, onClose }) {
+const fmtMoney = (value) => {
+  const amount = Number(value || 0);
+  if (!amount) return "—";
+  return `₱${amount.toLocaleString()}`;
+};
+
+const fmtDate = (date) => {
+  if (!date) return "—";
+
+  try {
+    return new Date(date).toLocaleDateString("en-PH", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  } catch {
+    return date;
+  }
+};
+
+const getReference = (project) => {
+  return project?.reference_no || project?.project_id || `PRJ-${project?.id}`;
+};
+
+const getResearcherName = (project) => {
   return (
-    <div style={MO.overlay} onClick={e => e.target === e.currentTarget && onClose()}>
-      <div style={MO.modal}>
-        <div style={MO.header}>
-          <div style={{ minWidth: 0 }}>
-            <p style={{ margin: 0, fontSize: 12, color: "#6b7280", fontWeight: 500 }}>{project.project_id}</p>
-            <h2 style={MO.title}>{project.title}</h2>
-          </div>
-          <button style={MO.closeBtn} onClick={onClose}><X size={18} /></button>
-        </div>
-
-        <div style={MO.body}>
-          {/* Status badge */}
-          <div style={{ marginBottom: 16 }}>
-            <span style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "5px 14px", borderRadius: 20, background: "#dcfce7", color: "#15803d", border: "1px solid #bbf7d0", fontSize: 13, fontWeight: 600 }}>
-              <CheckCircle2 size={14} /> Approved
-            </span>
-          </div>
-
-          {/* Info grid */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px 24px", marginBottom: 20 }}>
-            <InfoRow icon={<User size={14} />} label="Researcher" value={project.researcher} />
-            <InfoRow icon={<BookOpen size={14} />} label="Department" value={project.department} />
-            <InfoRow icon={<DollarSign size={14} />} label="Budget" value={`₱${Number(project.budget).toLocaleString()}`} />
-            <InfoRow icon={<Calendar size={14} />} label="Approved Date" value={project.approved_date} />
-          </div>
-
-          {/* Description */}
-          <div style={{ marginBottom: 20 }}>
-            <p style={{ margin: "0 0 6px", fontSize: 12, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.04em" }}>Description</p>
-            <p style={{ margin: 0, fontSize: 14, color: "#374151", lineHeight: 1.6 }}>{project.description}</p>
-          </div>
-
-          {/* Evaluators */}
-          <div style={{ marginBottom: 20 }}>
-            <p style={{ margin: "0 0 8px", fontSize: 12, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.04em" }}>
-              <Users size={13} style={{ marginRight: 4, verticalAlign: "middle" }} />Assigned Evaluators
-            </p>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-              {(project.evaluators || []).map((ev, i) => (
-                <span key={i} style={{ padding: "4px 12px", borderRadius: 20, background: "#eff6ff", color: "#1d4ed8", border: "1px solid #bfdbfe", fontSize: 13, fontWeight: 500 }}>
-                  {ev}
-                </span>
-              ))}
-            </div>
-          </div>
-
-          {/* Progress */}
-          <div>
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-              <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.04em" }}>Progress</p>
-              <span style={{ fontSize: 13, fontWeight: 700, color: "#15803d" }}>{project.progress}%</span>
-            </div>
-            <div style={{ height: 8, background: "#f1f5f9", borderRadius: 99, overflow: "hidden" }}>
-              <div style={{ height: "100%", width: `${project.progress}%`, background: "#15803d", borderRadius: 99, transition: "width 0.4s ease" }} />
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+    project?.creator?.name ||
+    project?.researcher ||
+    project?.created_by_name ||
+    "—"
   );
-}
+};
+
+const getDepartment = (project) => {
+  return (
+    project?.department_center?.name ||
+    project?.departmentCenter?.name ||
+    project?.department ||
+    project?.creator?.department ||
+    "—"
+  );
+};
+
+const getType = (project) => {
+  return project?.type || project?.scholarly_work_type || "—";
+};
+
+const getBudget = (project) => {
+  return project?.budget || project?.total_budget || 0;
+};
 
 function InfoRow({ icon, label, value }) {
   return (
     <div>
-      <p style={{ margin: 0, fontSize: 11, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.04em", display: "flex", alignItems: "center", gap: 4 }}>
-        {icon} {label}
+      <p
+        style={{
+          margin: 0,
+          fontSize: 11,
+          color: "#9ca3af",
+          textTransform: "uppercase",
+          letterSpacing: "0.04em",
+          display: "flex",
+          alignItems: "center",
+          gap: 5,
+        }}
+      >
+        {icon}
+        {label}
       </p>
-      <p style={{ margin: "3px 0 0", fontSize: 14, fontWeight: 600, color: "#111827" }}>{value}</p>
+
+      <p
+        style={{
+          margin: "4px 0 0",
+          fontSize: 14,
+          fontWeight: 600,
+          color: "#111827",
+          lineHeight: 1.4,
+        }}
+      >
+        {value || "—"}
+      </p>
     </div>
   );
 }
 
-const MO = {
-  overlay:  { position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", zIndex: 999, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 },
-  modal:    { background: "#fff", borderRadius: 16, width: "100%", maxWidth: 580, maxHeight: "90vh", overflow: "hidden", display: "flex", flexDirection: "column", boxShadow: "0 20px 60px rgba(0,0,0,0.2)" },
-  header:   { display: "flex", justifyContent: "space-between", alignItems: "flex-start", padding: "20px 24px 16px", borderBottom: "1px solid #f1f5f9", gap: 12 },
-  title:    { margin: "4px 0 0", fontSize: 17, fontWeight: 700, color: "#111827" },
-  closeBtn: { background: "#f3f4f6", border: "none", borderRadius: 8, cursor: "pointer", padding: 6, display: "flex", color: "#374151", flexShrink: 0 },
-  body:     { overflowY: "auto", padding: "20px 24px 24px" },
-};
+function DetailModal({ project, onClose }) {
+  const status = project?.status || "Submitted";
+  const style = STATUS_STYLE[status] || STATUS_STYLE.Submitted;
 
-/* ── ProjectManagement ───────────────────────────────────── */
-export default function ProjectManagement() {
-  const [projects,     setProjects]     = useState([]);
-  const [filtered,     setFiltered]     = useState([]);
-  const [search,       setSearch]       = useState("");
-  const [loading,      setLoading]      = useState(true);
-  const [viewing,      setViewing]      = useState(null);
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(0,0,0,0.45)",
+        zIndex: 999,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 16,
+      }}
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <div
+        style={{
+          background: "#fff",
+          borderRadius: 16,
+          width: "100%",
+          maxWidth: 620,
+          maxHeight: "90vh",
+          overflow: "hidden",
+          display: "flex",
+          flexDirection: "column",
+          boxShadow: "0 20px 60px rgba(0,0,0,0.2)",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+            padding: "20px 24px 16px",
+            borderBottom: "1px solid #f1f5f9",
+            gap: 12,
+          }}
+        >
+          <div style={{ minWidth: 0 }}>
+            <p
+              style={{
+                margin: 0,
+                fontSize: 12,
+                color: "#6b7280",
+                fontWeight: 500,
+              }}
+            >
+              {getReference(project)}
+            </p>
+
+            <h2
+              style={{
+                margin: "4px 0 0",
+                fontSize: 18,
+                fontWeight: 800,
+                color: "#111827",
+                lineHeight: 1.3,
+              }}
+            >
+              {project?.title || "Untitled Project"}
+            </h2>
+          </div>
+
+          <button
+            type="button"
+            onClick={onClose}
+            style={{
+              background: "#f3f4f6",
+              border: "none",
+              borderRadius: 8,
+              cursor: "pointer",
+              padding: 7,
+              display: "flex",
+              color: "#374151",
+              flexShrink: 0,
+            }}
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        <div style={{ overflowY: "auto", padding: "20px 24px 24px" }}>
+          <div style={{ marginBottom: 18 }}>
+            <span
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "5px 14px",
+                borderRadius: 20,
+                background: style.bg,
+                color: style.color,
+                border: `1px solid ${style.border}`,
+                fontSize: 13,
+                fontWeight: 700,
+              }}
+            >
+              <CheckCircle2 size={14} />
+              {status}
+            </span>
+          </div>
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: "16px 24px",
+              marginBottom: 22,
+            }}
+          >
+            <InfoRow
+              icon={<User size={14} />}
+              label="Researcher"
+              value={getResearcherName(project)}
+            />
+            <InfoRow
+              icon={<BookOpen size={14} />}
+              label="Department"
+              value={getDepartment(project)}
+            />
+            <InfoRow
+              icon={<FileText size={14} />}
+              label="Type"
+              value={getType(project)}
+            />
+            <InfoRow
+              icon={<Calendar size={14} />}
+              label="Start Date"
+              value={fmtDate(project?.start_date)}
+            />
+            <InfoRow
+              icon={<Calendar size={14} />}
+              label="End Date"
+              value={fmtDate(project?.end_date)}
+            />
+            <InfoRow
+              icon={<Calendar size={14} />}
+              label="Submitted Date"
+              value={fmtDate(project?.submitted_at || project?.created_at)}
+            />
+          </div>
+
+          <div
+            style={{
+              background: "#f9fafb",
+              border: "1px solid #e5e7eb",
+              borderRadius: 12,
+              padding: "14px 16px",
+              marginBottom: 20,
+            }}
+          >
+            <p
+              style={{
+                margin: "0 0 4px",
+                fontSize: 12,
+                fontWeight: 700,
+                color: "#6b7280",
+                textTransform: "uppercase",
+                letterSpacing: "0.04em",
+              }}
+            >
+              Budget
+            </p>
+
+            <p
+              style={{
+                margin: 0,
+                fontSize: 20,
+                fontWeight: 800,
+                color: "#111827",
+              }}
+            >
+              {fmtMoney(getBudget(project))}
+            </p>
+          </div>
+
+          <div>
+            <p
+              style={{
+                margin: "0 0 8px",
+                fontSize: 12,
+                fontWeight: 700,
+                color: "#6b7280",
+                textTransform: "uppercase",
+                letterSpacing: "0.04em",
+              }}
+            >
+              Description
+            </p>
+
+            <p
+              style={{
+                margin: 0,
+                fontSize: 14,
+                color: "#374151",
+                lineHeight: 1.6,
+              }}
+            >
+              {project?.description ||
+                project?.abstract ||
+                "No description available."}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function AdminProjects() {
+  const [projects, setProjects] = useState([]);
+  const [filtered, setFiltered] = useState([]);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("All Status");
+  const [loading, setLoading] = useState(true);
+  const [viewing, setViewing] = useState(null);
   const [sidebarWidth, setSidebarWidth] = useState(240);
-  const [isMobile,     setIsMobile]     = useState(window.innerWidth < 768);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
   useEffect(() => {
     const onResize = () => setIsMobile(window.innerWidth < 768);
     window.addEventListener("resize", onResize);
+
     return () => window.removeEventListener("resize", onResize);
   }, []);
 
   useEffect(() => {
-    api.get("/admin/projects/approved")
-      .then(r => { setProjects(r.data); setFiltered(r.data); })
-      .catch(() => { setProjects(MOCK); setFiltered(MOCK); })
-      .finally(() => setLoading(false));
+    fetchProjects();
   }, []);
 
   useEffect(() => {
     const q = search.toLowerCase();
-    setFiltered(projects.filter(p =>
-      p.title?.toLowerCase().includes(q) ||
-      p.researcher?.toLowerCase().includes(q) ||
-      p.department?.toLowerCase().includes(q) ||
-      p.project_id?.toLowerCase().includes(q)
-    ));
-  }, [search, projects]);
+
+    const next = projects.filter((project) => {
+      const status = project.status || "Submitted";
+
+      const matchesSearch =
+        project.title?.toLowerCase().includes(q) ||
+        getReference(project)?.toLowerCase().includes(q) ||
+        getResearcherName(project)?.toLowerCase().includes(q) ||
+        getDepartment(project)?.toLowerCase().includes(q) ||
+        getType(project)?.toLowerCase().includes(q);
+
+      const matchesStatus =
+        statusFilter === "All Status" || status === statusFilter;
+
+      return matchesSearch && matchesStatus;
+    });
+
+    setFiltered(next);
+  }, [search, statusFilter, projects]);
+
+  const fetchProjects = async () => {
+    setLoading(true);
+
+    try {
+      const res = await api.get("/admin/proposals");
+      const all = Array.isArray(res.data) ? res.data : [];
+
+      const data = all.filter((project) =>
+        PROJECT_STATUSES.includes(project.status)
+      );
+
+      setProjects(data);
+      setFiltered(data);
+    } catch (err) {
+      console.error(err);
+      setProjects([]);
+      setFiltered([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const ml = isMobile ? 0 : sidebarWidth;
+
+  const totalBudget = projects.reduce(
+    (sum, project) => sum + Number(getBudget(project) || 0),
+    0
+  );
+
+  const approvedCount = projects.filter(
+    (project) => project.status === "Approved"
+  ).length;
+
+  const submittedCount = projects.filter(
+    (project) => project.status === "Submitted"
+  ).length;
+
+  const inProgressCount = projects.filter(
+    (project) => project.status === "In Progress"
+  ).length;
 
   return (
     <>
       <style>{`
-        .pm-table { width:100%; border-collapse:collapse; }
-        .pm-table th { padding:12px 16px; text-align:left; font-size:12px; font-weight:600; color:#6b7280; text-transform:uppercase; letter-spacing:.04em; border-bottom:2px solid #e5e7eb; white-space:nowrap; background:#f9fafb; }
-        .pm-table td { padding:14px 16px; font-size:13px; color:#374151; border-bottom:1px solid #f1f5f9; vertical-align:middle; }
-        .pm-table tr:last-child td { border-bottom:none; }
-        .pm-table tr:hover td { background:#fafafa; }
-        .pm-cards { display:none; flex-direction:column; gap:12px; }
-        @media(max-width:900px){ .pm-table-wrap { display:none; } .pm-cards { display:flex; } }
+        .admin-project-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 14px;
+          margin-bottom: 22px;
+        }
+
+        .admin-project-card {
+          background: #fff;
+          border: 1px solid #e5e7eb;
+          border-radius: 12px;
+          padding: 18px 20px;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        }
+
+        .admin-filter-bar {
+          display: grid;
+          grid-template-columns: 1fr 240px;
+          gap: 12px;
+          margin-bottom: 18px;
+        }
+
+        .admin-search-box {
+          background: #fff;
+          border: 1px solid #e5e7eb;
+          border-radius: 12px;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 0 14px;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        }
+
+        .admin-search-box input {
+          flex: 1;
+          border: none;
+          outline: none;
+          padding: 12px 0;
+          font-size: 14px;
+          color: #111827;
+          background: transparent;
+        }
+
+        .admin-select-wrap {
+          position: relative;
+          background: #fff;
+          border: 1px solid #e5e7eb;
+          border-radius: 12px;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        }
+
+        .admin-select-wrap select {
+          width: 100%;
+          appearance: none;
+          border: none;
+          outline: none;
+          background: transparent;
+          padding: 12px 38px 12px 14px;
+          font-size: 14px;
+          color: #374151;
+          cursor: pointer;
+        }
+
+        .admin-select-wrap svg {
+          position: absolute;
+          right: 14px;
+          top: 50%;
+          transform: translateY(-50%);
+          pointer-events: none;
+        }
+
+        .admin-table-card {
+          background: #fff;
+          border: 1px solid #e5e7eb;
+          border-radius: 14px;
+          overflow: hidden;
+          box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+        }
+
+        .admin-table-scroll {
+          overflow-x: auto;
+        }
+
+        .admin-project-table {
+          width: 100%;
+          border-collapse: collapse;
+        }
+
+        .admin-project-table th {
+          padding: 12px 16px;
+          text-align: left;
+          font-size: 12px;
+          font-weight: 800;
+          color: #6b7280;
+          text-transform: uppercase;
+          letter-spacing: 0.04em;
+          border-bottom: 1px solid #e5e7eb;
+          background: #f9fafb;
+          white-space: nowrap;
+        }
+
+        .admin-project-table td {
+          padding: 14px 16px;
+          font-size: 13px;
+          color: #374151;
+          border-bottom: 1px solid #f1f5f9;
+          vertical-align: middle;
+        }
+
+        .admin-project-table tr:last-child td {
+          border-bottom: none;
+        }
+
+        .admin-project-table tr:hover td {
+          background: #fafafa;
+        }
+
+        @media (max-width: 1100px) {
+          .admin-project-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
+        }
+
+        @media (max-width: 760px) {
+          .admin-project-grid,
+          .admin-filter-bar {
+            grid-template-columns: 1fr;
+          }
+        }
       `}</style>
 
-      <div style={{ display: "flex", minHeight: "100vh", background: "#f3f4f6" }}>
+      <div
+        style={{
+          display: "flex",
+          minHeight: "100vh",
+          background: "#f3f4f6",
+        }}
+      >
         <AdminNavbar onWidthChange={setSidebarWidth} />
 
-        <div style={{ marginLeft: ml, flex: 1, display: "flex", flexDirection: "column", transition: "margin-left 0.22s ease", minWidth: 0 }}>
-          <Topbar title="Project Management" />
+        <div
+          style={{
+            marginLeft: ml,
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+            transition: "margin-left 0.22s ease",
+            minWidth: 0,
+          }}
+        >
+          <Topbar title="Projects Management" />
 
           <div style={{ padding: "24px", flex: 1 }}>
-
-            {/* Heading */}
             <div style={{ marginBottom: 24 }}>
-              <h3  style={{ margin: "4px 0 0", fontSize: 13, color: "#6b7280" }}>View and monitor all approved research projects</h3>
+              <h3
+                style={{
+                  margin: "4px 0 0",
+                  fontSize: 13,
+                  color: "#6b7280",
+                }}
+              >
+                Monitor submitted proposals, approved projects, and active
+                research projects
+              </h3>
             </div>
 
-            {/* Search + stat */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 16, marginBottom: 20, alignItems: "stretch" }}>
-              <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, display: "flex", alignItems: "center", gap: 10, padding: "0 16px", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
-                <Search size={18} color="#9ca3af" strokeWidth={1.8} />
-                <input value={search} onChange={e => setSearch(e.target.value)}
-                  placeholder="Search by title, researcher, or department..."
-                  style={{ flex: 1, border: "none", outline: "none", fontSize: 14, color: "#111827", padding: "14px 0", background: "transparent" }} />
+            <div className="admin-project-grid">
+              <div className="admin-project-card">
+                <p
+                  style={{
+                    margin: 0,
+                    fontSize: 12,
+                    color: "#6b7280",
+                    fontWeight: 700,
+                    textTransform: "uppercase",
+                  }}
+                >
+                  Total Records
+                </p>
+                <p
+                  style={{
+                    margin: "6px 0 0",
+                    fontSize: 26,
+                    fontWeight: 800,
+                    color: "#111827",
+                  }}
+                >
+                  {loading ? "—" : projects.length}
+                </p>
               </div>
-              <div style={{ background: "#dcfce7", border: "1px solid #bbf7d0", borderRadius: 12, padding: "14px 28px", textAlign: "center", minWidth: 160, boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
-                <p style={{ margin: 0, fontSize: 28, fontWeight: 800, color: "#111827" }}>{filtered.length}</p>
-                <p style={{ margin: "2px 0 0", fontSize: 13, color: "#6b7280" }}>Approved Projects</p>
+
+              <div className="admin-project-card">
+                <p
+                  style={{
+                    margin: 0,
+                    fontSize: 12,
+                    color: "#6b7280",
+                    fontWeight: 700,
+                    textTransform: "uppercase",
+                  }}
+                >
+                  Submitted
+                </p>
+                <p
+                  style={{
+                    margin: "6px 0 0",
+                    fontSize: 26,
+                    fontWeight: 800,
+                    color: "#0369a1",
+                  }}
+                >
+                  {loading ? "—" : submittedCount}
+                </p>
+              </div>
+
+              <div className="admin-project-card">
+                <p
+                  style={{
+                    margin: 0,
+                    fontSize: 12,
+                    color: "#6b7280",
+                    fontWeight: 700,
+                    textTransform: "uppercase",
+                  }}
+                >
+                  Approved
+                </p>
+                <p
+                  style={{
+                    margin: "6px 0 0",
+                    fontSize: 26,
+                    fontWeight: 800,
+                    color: "#15803d",
+                  }}
+                >
+                  {loading ? "—" : approvedCount}
+                </p>
+              </div>
+
+              <div className="admin-project-card">
+                <p
+                  style={{
+                    margin: 0,
+                    fontSize: 12,
+                    color: "#6b7280",
+                    fontWeight: 700,
+                    textTransform: "uppercase",
+                  }}
+                >
+                  Total Budget
+                </p>
+                <p
+                  style={{
+                    margin: "6px 0 0",
+                    fontSize: 22,
+                    fontWeight: 800,
+                    color: "#111827",
+                  }}
+                >
+                  {loading ? "—" : fmtMoney(totalBudget)}
+                </p>
               </div>
             </div>
 
-            {/* Table */}
-            <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #e5e7eb", boxShadow: "0 1px 3px rgba(0,0,0,0.04)", overflow: "hidden" }}>
-              <div style={{ padding: "16px 22px", borderBottom: "1px solid #f1f5f9", display: "flex", alignItems: "center", gap: 10 }}>
-                <FolderOpen size={18} color="#15803d" />
-                <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: "#111827" }}>Approved Projects</h3>
+            <div className="admin-filter-bar">
+              <div className="admin-search-box">
+                <Search size={18} color="#9ca3af" />
+                <input
+                  type="text"
+                  placeholder="Search by title, reference number, researcher, department, or type..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
               </div>
 
-              {loading ? (
-                <p style={{ padding: 24, color: "#9ca3af", fontSize: 14 }}>Loading…</p>
-              ) : filtered.length === 0 ? (
-                <div style={{ padding: "48px 24px", textAlign: "center" }}>
-                  <FolderOpen size={40} color="#d1d5db" style={{ margin: "0 auto 10px", display: "block" }} />
-                  <p style={{ color: "#9ca3af", fontSize: 14, margin: 0 }}>No approved projects found.</p>
-                </div>
-              ) : (
-                <>
-                  {/* Desktop table */}
-                  <div className="pm-table-wrap" style={{ overflowX: "auto" }}>
-                    <table className="pm-table">
-                      <thead>
-                        <tr>
-                          {["ID", "Title", "Researcher", "Department", "Budget", "Approved Date", "Progress", "Evaluators", "Actions"].map(h => (
-                            <th key={h}>{h}</th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {filtered.map(p => (
-                          <tr key={p.id}>
-                            <td style={{ fontWeight: 600, color: "#111827", whiteSpace: "nowrap" }}>{p.project_id}</td>
-                            <td style={{ maxWidth: 220 }}>
-                              <p style={{ margin: 0, fontWeight: 500, color: "#111827" }}>{p.title}</p>
+              <div className="admin-select-wrap">
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                >
+                  <option>All Status</option>
+                  <option>Submitted</option>
+                  <option>Presentation Scheduled</option>
+                  <option>Under Evaluation</option>
+                  <option>Evaluated</option>
+                  <option>Endorsed</option>
+                  <option>Recommended</option>
+                  <option>Forwarded</option>
+                  <option>Approved</option>
+                  <option>In Progress</option>
+                  <option>Rejected</option>
+                  <option>For Revision</option>
+                </select>
+                <ChevronDown size={15} color="#6b7280" />
+              </div>
+            </div>
+
+            <div className="admin-table-card">
+              <div
+                style={{
+                  padding: "16px 20px",
+                  borderBottom: "1px solid #f1f5f9",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 12,
+                }}
+              >
+                <h4
+                  style={{
+                    margin: 0,
+                    fontSize: 15,
+                    fontWeight: 800,
+                    color: "#111827",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                  }}
+                >
+                  <FolderOpen size={17} color="#f59e0b" />
+                  Research Projects / Proposals
+                </h4>
+
+                <span style={{ fontSize: 13, color: "#6b7280" }}>
+                  {loading ? "Loading..." : `${filtered.length} shown`}
+                </span>
+              </div>
+
+              <div className="admin-table-scroll">
+                <table className="admin-project-table">
+                  <thead>
+                    <tr>
+                      <th>Reference No</th>
+                      <th>Title</th>
+                      <th>Researcher</th>
+                      <th>Department</th>
+                      <th>Type</th>
+                      <th>Budget</th>
+                      <th>Status</th>
+                      <th style={{ textAlign: "right" }}>Action</th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    {loading && (
+                      <tr>
+                        <td
+                          colSpan={8}
+                          style={{
+                            textAlign: "center",
+                            padding: 28,
+                            color: "#9ca3af",
+                          }}
+                        >
+                          Loading records...
+                        </td>
+                      </tr>
+                    )}
+
+                    {!loading &&
+                      filtered.map((project) => {
+                        const status = project.status || "Submitted";
+                        const style =
+                          STATUS_STYLE[status] || STATUS_STYLE.Submitted;
+
+                        return (
+                          <tr key={project.id}>
+                            <td style={{ fontWeight: 700 }}>
+                              {getReference(project)}
                             </td>
-                            <td style={{ whiteSpace: "nowrap" }}>{p.researcher}</td>
-                            <td>{p.department}</td>
-                            <td style={{ whiteSpace: "nowrap" }}>₱{Number(p.budget).toLocaleString()}</td>
-                            <td style={{ whiteSpace: "nowrap", color: "#6b7280" }}>{p.approved_date}</td>
-                            <td style={{ minWidth: 120 }}>
-                              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                <div style={{ flex: 1, height: 6, background: "#f1f5f9", borderRadius: 99, overflow: "hidden" }}>
-                                  <div style={{ height: "100%", width: `${p.progress}%`, background: "#15803d", borderRadius: 99 }} />
-                                </div>
-                                <span style={{ fontSize: 12, fontWeight: 600, color: "#15803d", whiteSpace: "nowrap" }}>{p.progress}%</span>
-                              </div>
-                            </td>
+
                             <td>
-                              <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-                                {(p.evaluators || []).map((ev, i) => (
-                                  <span key={i} style={{ padding: "2px 8px", borderRadius: 12, background: "#eff6ff", color: "#1d4ed8", border: "1px solid #bfdbfe", fontSize: 11, fontWeight: 500, whiteSpace: "nowrap" }}>
-                                    {ev.split(" ").slice(-1)[0]}
-                                  </span>
-                                ))}
-                              </div>
+                              <strong style={{ color: "#111827" }}>
+                                {project.title || "Untitled Project"}
+                              </strong>
                             </td>
+
+                            <td>{getResearcherName(project)}</td>
+                            <td>{getDepartment(project)}</td>
+                            <td>{getType(project)}</td>
+                            <td>{fmtMoney(getBudget(project))}</td>
+
                             <td>
-                              <button onClick={() => setViewing(p)}
-                                style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "7px 14px", borderRadius: 8, border: "none", background: "#f59e0b", color: "#fff", cursor: "pointer", fontSize: 13, fontWeight: 600 }}>
-                                <Eye size={14} /> View
-                              </button>
+                              <span
+                                style={{
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  padding: "4px 11px",
+                                  borderRadius: 999,
+                                  background: style.bg,
+                                  color: style.color,
+                                  border: `1px solid ${style.border}`,
+                                  fontSize: 12,
+                                  fontWeight: 700,
+                                  whiteSpace: "nowrap",
+                                }}
+                              >
+                                {status}
+                              </span>
+                            </td>
+
+                            <td>
+                              <div
+                                style={{
+                                  display: "flex",
+                                  justifyContent: "flex-end",
+                                }}
+                              >
+                                <button
+                                  type="button"
+                                  onClick={() => setViewing(project)}
+                                  style={{
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    gap: 6,
+                                    border: "none",
+                                    background: "transparent",
+                                    color: "#f59e0b",
+                                    fontWeight: 800,
+                                    cursor: "pointer",
+                                    padding: 0,
+                                    fontSize: 13,
+                                  }}
+                                >
+                                  <Eye size={15} />
+                                  View
+                                </button>
+                              </div>
                             </td>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                        );
+                      })}
 
-                  {/* Mobile cards */}
-                  <div className="pm-cards" style={{ padding: "14px 16px" }}>
-                    {filtered.map(p => (
-                      <div key={p.id} style={{ border: "1px solid #e5e7eb", borderRadius: 12, padding: "14px 16px", background: "#fafafa" }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10, gap: 10 }}>
-                          <div style={{ minWidth: 0 }}>
-                            <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: "#111827", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.title}</p>
-                            <p style={{ margin: "2px 0 0", fontSize: 12, color: "#6b7280" }}>{p.project_id}</p>
+                    {!loading && filtered.length === 0 && (
+                      <tr>
+                        <td
+                          colSpan={8}
+                          style={{
+                            textAlign: "center",
+                            padding: 34,
+                            color: "#9ca3af",
+                          }}
+                        >
+                          <div
+                            style={{
+                              display: "flex",
+                              flexDirection: "column",
+                              alignItems: "center",
+                              gap: 8,
+                            }}
+                          >
+                            <AlertCircle size={28} color="#d1d5db" />
+                            <span>No records found.</span>
                           </div>
-                          <span style={{ padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 600, background: "#dcfce7", color: "#15803d", border: "1px solid #bbf7d0", whiteSpace: "nowrap", flexShrink: 0 }}>
-                            Approved
-                          </span>
-                        </div>
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "5px 12px", fontSize: 12, color: "#6b7280", marginBottom: 10 }}>
-                          <span><b style={{ color: "#374151" }}>By:</b> {p.researcher}</span>
-                          <span><b style={{ color: "#374151" }}>Dept:</b> {p.department}</span>
-                          <span><b style={{ color: "#374151" }}>Budget:</b> ₱{Number(p.budget).toLocaleString()}</span>
-                          <span><b style={{ color: "#374151" }}>Approved:</b> {p.approved_date}</span>
-                        </div>
-                        <div style={{ marginBottom: 12 }}>
-                          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                            <span style={{ fontSize: 12, color: "#6b7280" }}>Progress</span>
-                            <span style={{ fontSize: 12, fontWeight: 700, color: "#15803d" }}>{p.progress}%</span>
-                          </div>
-                          <div style={{ height: 6, background: "#f1f5f9", borderRadius: 99, overflow: "hidden" }}>
-                            <div style={{ height: "100%", width: `${p.progress}%`, background: "#15803d", borderRadius: 99 }} />
-                          </div>
-                        </div>
-                        <button onClick={() => setViewing(p)}
-                          style={{ width: "100%", padding: "9px 0", borderRadius: 9, border: "none", background: "#f59e0b", color: "#fff", fontWeight: 600, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 7 }}>
-                          <Eye size={15} /> View Details
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </>
-              )}
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
+
+            {!loading && projects.length === 0 && (
+              <div
+                style={{
+                  marginTop: 18,
+                  background: "#fff",
+                  border: "1px dashed #d1d5db",
+                  borderRadius: 12,
+                  padding: "28px 20px",
+                  textAlign: "center",
+                }}
+              >
+                <FolderOpen
+                  size={38}
+                  color="#d1d5db"
+                  style={{ margin: "0 auto 10px", display: "block" }}
+                />
+
+                <p
+                  style={{
+                    margin: 0,
+                    fontSize: 15,
+                    fontWeight: 800,
+                    color: "#374151",
+                  }}
+                >
+                  No submitted proposals or projects yet.
+                </p>
+
+                <p
+                  style={{
+                    margin: "6px 0 0",
+                    fontSize: 13,
+                    color: "#9ca3af",
+                  }}
+                >
+                  Submitted researcher proposals will appear here once they are
+                  saved with Submitted status.
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
-      {viewing && <DetailModal project={viewing} onClose={() => setViewing(null)} />}
+      {viewing && (
+        <DetailModal project={viewing} onClose={() => setViewing(null)} />
+      )}
     </>
   );
 }

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, Mail, Pencil, Trash2 } from "lucide-react";
+import { Plus, Mail, Trash2, Search } from "lucide-react";
 import Navbar from "../../components/researcher/Navbar";
 import Topbar from "../../components/Topbar";
 import "../../styles/researcher.css";
@@ -12,15 +12,20 @@ const ROLE_STYLES = {
 };
 
 export default function TeamManagement() {
-  const [projects,       setProjects]       = useState([]);
+  const [projects,        setProjects]        = useState([]);
   const [selectedProject, setSelectedProject] = useState("");
-  const [members,        setMembers]        = useState([]);
-  const [showModal,      setShowModal]      = useState(false);
-  const [editingMember,  setEditingMember]  = useState(null);
-  const [form,           setForm]           = useState({ name: "", email: "", department: "", role: "Member" });
-  const [loading,        setLoading]        = useState(false);
+  const [members,         setMembers]         = useState([]);
+  const [showModal,       setShowModal]       = useState(false);
+  const [editingMember,   setEditingMember]   = useState(null);
+  const [form,            setForm]            = useState({ personnel_id: "", role: "Member" });
+  const [loading,         setLoading]         = useState(false);
+  const [error,           setError]           = useState("");
 
-  // Load researcher's projects
+  const [searchQuery,    setSearchQuery]    = useState("");
+  const [searchResults,  setSearchResults]  = useState([]);
+  const [selectedPerson, setSelectedPerson] = useState(null);
+  const [searching,      setSearching]      = useState(false);
+
   useEffect(() => {
     api.get("/projects").then((res) => {
       setProjects(res.data);
@@ -28,7 +33,6 @@ export default function TeamManagement() {
     });
   }, []);
 
-  // Load team when project changes
   useEffect(() => {
     if (!selectedProject) return;
     api.get(`/projects/${selectedProject}/team`).then((res) => setMembers(res.data));
@@ -36,38 +40,88 @@ export default function TeamManagement() {
 
   const openAdd = () => {
     setEditingMember(null);
-    setForm({ name: "", email: "", department: "", role: "Member" });
+    setForm({ personnel_id: "", role: "Member" });
+    setSearchQuery("");
+    setSearchResults([]);
+    setSelectedPerson(null);
+    setError("");
     setShowModal(true);
   };
 
   const openEdit = (member) => {
     setEditingMember(member);
-    setForm({ name: member.name, email: member.email, department: member.department, role: member.role });
+    setForm({ personnel_id: member.id, role: member.role });
+    setError("");
     setShowModal(true);
   };
 
   const handleDelete = async (id) => {
-    await api.delete(`/projects/${selectedProject}/team/${id}`);
-    setMembers((p) => p.filter((m) => m.id !== id));
+    if (!confirm("Remove this team member?")) return;
+    try {
+      await api.delete(`/projects/${selectedProject}/team/${id}`);
+      setMembers((p) => p.filter((m) => m.id !== id));
+    } catch (err) {
+      alert(err.response?.data?.message || "Failed to remove member.");
+    }
+  };
+
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) return;
+    setSearching(true);
+    setSearchResults([]);
+    setSelectedPerson(null);
+    try {
+      const res = await api.get(`/personnel/search?q=${encodeURIComponent(searchQuery)}`);
+      setSearchResults(res.data);
+      if (res.data.length === 0) setError("No personnel found. Make sure the person has a registered account.");
+      else setError("");
+    } catch (err) {
+      setError("Search failed. Please try again.");
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const selectPerson = (person) => {
+    setSelectedPerson(person);
+    setForm((f) => ({ ...f, personnel_id: person.id }));
+    setSearchResults([]);
+    setSearchQuery(person.name);
+    setError("");
   };
 
   const handleSave = async () => {
-    if (!form.name || !form.email) return;
-    setLoading(true);
-    try {
-      if (editingMember) {
+    setError("");
+    if (editingMember) {
+      setLoading(true);
+      try {
         const res = await api.put(`/projects/${selectedProject}/team/${editingMember.id}`, { role: form.role });
         setMembers((p) => p.map((m) => m.id === editingMember.id ? { ...m, role: res.data.role } : m));
-      } else {
-        // For adding, we need to find the personnel by email first
-        // For now just refresh the team list
-        await api.get(`/projects/${selectedProject}/team`).then((res) => setMembers(res.data));
+        setShowModal(false);
+      } catch (err) {
+        setError(err.response?.data?.message || "Failed to update role.");
+      } finally {
+        setLoading(false);
       }
-      setShowModal(false);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
+    } else {
+      if (!form.personnel_id) {
+        setError("Please search and select a person first.");
+        return;
+      }
+      setLoading(true);
+      try {
+        await api.post(`/projects/${selectedProject}/team`, {
+          personnel_id: form.personnel_id,
+          role: form.role,
+        });
+        const teamRes = await api.get(`/projects/${selectedProject}/team`);
+        setMembers(teamRes.data);
+        setShowModal(false);
+      } catch (err) {
+        setError(err.response?.data?.message || "Failed to add team member.");
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -82,7 +136,6 @@ export default function TeamManagement() {
         <Topbar title="Team Management" />
         <div className="dashboard-content">
 
-          {/* Page Header */}
           <div className="page-header">
             <div>
               <h3 className="page-subtitle">Manage project team members and roles</h3>
@@ -92,7 +145,6 @@ export default function TeamManagement() {
             </button>
           </div>
 
-          {/* Project Selector */}
           {projects.length > 0 && (
             <div className="cp-section" style={{ marginBottom: 16 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
@@ -115,7 +167,6 @@ export default function TeamManagement() {
             </div>
           )}
 
-          {/* Table */}
           <div className="table-wrapper">
             <h4 className="table-title">Current Team Members</h4>
             <div className="table-scroll">
@@ -151,7 +202,7 @@ export default function TeamManagement() {
                             <span style={{ fontSize: 13 }}>{m.email}</span>
                           </div>
                         </td>
-                        <td>{m.department}</td>
+                        <td>{m.department || "—"}</td>
                         <td>
                           <span className="badge" style={{ background: rs.bg, color: rs.color }}>
                             {m.role}
@@ -180,7 +231,6 @@ export default function TeamManagement() {
             </div>
           </div>
 
-          {/* Stats */}
           <div className="tm-stats">
             <div className="tm-stat-card">
               <p className="tm-stat-num">{totalMembers}</p>
@@ -199,7 +249,6 @@ export default function TeamManagement() {
         </div>
       </div>
 
-      {/* Modal */}
       {showModal && (
         <div className="tm-modal-overlay" onClick={() => setShowModal(false)}>
           <div className="tm-modal" onClick={(e) => e.stopPropagation()}>
@@ -207,36 +256,125 @@ export default function TeamManagement() {
               {editingMember ? "Edit Team Member" : "Add Team Member"}
             </h3>
 
-            {editingMember ? (
-              <div className="cp-field">
-                <label className="cp-label">Role *</label>
-                <div className="cp-select-wrap">
-                  <select className="cp-select" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}>
-                    <option>Leader</option>
-                    <option>Co-Leader</option>
-                    <option>Member</option>
-                  </select>
-                  <span className="cp-select-chevron">▾</span>
+            {!editingMember && (
+              <>
+                <div className="cp-field" style={{ marginBottom: 12 }}>
+                  <label className="cp-label">Search by Name or Email *</label>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <input
+                      className="cp-input"
+                      style={{ flex: 1 }}
+                      type="text"
+                      placeholder="e.g. Juan Dela Cruz or juan@csu.edu.ph"
+                      value={searchQuery}
+                      onChange={(e) => {
+                        setSearchQuery(e.target.value);
+                        setSelectedPerson(null);
+                        setForm((f) => ({ ...f, personnel_id: "" }));
+                      }}
+                      onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                    />
+                    <button
+                      className="cp-btn primary"
+                      style={{ background: "#1f7a1f", borderColor: "#1f7a1f", whiteSpace: "nowrap" }}
+                      onClick={handleSearch}
+                      disabled={searching}
+                    >
+                      {searching ? "..." : <><Search size={14} /> Search</>}
+                    </button>
+                  </div>
+
+                  {searchResults.length > 0 && (
+                    <div style={{
+                      border: "1px solid #d1d5db",
+                      borderRadius: 8,
+                      marginTop: 4,
+                      background: "#fff",
+                      boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+                      maxHeight: 180,
+                      overflowY: "auto",
+                    }}>
+                      {searchResults.map((p) => (
+                        <div
+                          key={p.id}
+                          onClick={() => selectPerson(p)}
+                          style={{
+                            padding: "10px 14px",
+                            cursor: "pointer",
+                            borderBottom: "1px solid #f3f4f6",
+                            fontSize: 13,
+                          }}
+                          onMouseEnter={(e) => e.currentTarget.style.background = "#f0fdf4"}
+                          onMouseLeave={(e) => e.currentTarget.style.background = "#fff"}
+                        >
+                          <div style={{ fontWeight: 600, color: "#111827" }}>{p.name}</div>
+                          <div style={{ color: "#6b7280", fontSize: 12 }}>{p.email} · {p.role}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
+
+                {selectedPerson && (
+                  <div style={{
+                    background: "#f0fdf4",
+                    border: "1px solid #bbf7d0",
+                    borderRadius: 8,
+                    padding: "10px 14px",
+                    marginBottom: 12,
+                    fontSize: 13,
+                  }}>
+                    <div style={{ fontWeight: 600, color: "#15803d" }}>✓ Selected: {selectedPerson.name}</div>
+                    <div style={{ color: "#6b7280" }}>{selectedPerson.email}</div>
+                  </div>
+                )}
+              </>
+            )}
+
+            {editingMember && (
+              <div style={{
+                background: "#f9fafb",
+                border: "1px solid #e5e7eb",
+                borderRadius: 8,
+                padding: "10px 14px",
+                marginBottom: 12,
+                fontSize: 13,
+              }}>
+                <div style={{ fontWeight: 600, color: "#111827" }}>{editingMember.name}</div>
+                <div style={{ color: "#6b7280" }}>{editingMember.email}</div>
               </div>
-            ) : (
-              <p style={{ fontSize: 13, color: "#6b7280" }}>
-                To add a team member, the person must first register an account in the system. Then you can assign them here by their personnel ID.
-              </p>
+            )}
+
+            <div className="cp-field" style={{ marginBottom: 16 }}>
+              <label className="cp-label">Role *</label>
+              <div className="cp-select-wrap">
+                <select
+                  className="cp-select"
+                  value={form.role}
+                  onChange={(e) => setForm({ ...form, role: e.target.value })}
+                >
+                  <option value="Leader">Leader</option>
+                  <option value="Co-Leader">Co-Leader</option>
+                  <option value="Member">Member</option>
+                </select>
+                <span className="cp-select-chevron">▾</span>
+              </div>
+            </div>
+
+            {error && (
+              <p style={{ color: "#dc2626", fontSize: 13, marginBottom: 12 }}>{error}</p>
             )}
 
             <div className="tm-modal-actions">
               <button className="cp-btn" onClick={() => setShowModal(false)}>Cancel</button>
-              {editingMember && (
-                <button
-                  className="cp-btn primary"
-                  style={{ background: "#1f7a1f", borderColor: "#1f7a1f" }}
-                  onClick={handleSave}
-                  disabled={loading}
-                >
-                  {loading ? "Saving..." : "Save Changes"}
-                </button>
-              )}
+              <button
+                className="cp-btn primary"
+                style={{ background: "#1f7a1f", borderColor: "#1f7a1f" }}
+                onClick={handleSave}
+                disabled={loading || (!editingMember && !form.personnel_id)}
+              >
+                {loading ? "Saving..." : editingMember ? "Save Changes" : "Add Member"}
+              </button>
             </div>
           </div>
         </div>

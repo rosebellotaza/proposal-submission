@@ -31,13 +31,56 @@ Route::post('/login',    [AuthController::class, 'login']);
 */
 Route::middleware('auth:sanctum')->group(function () {
 
+    Route::get('/personnel/search', function (\Illuminate\Http\Request $request) {
+        $q = $request->query('q');
+        return \App\Models\Personnel::where('role', 'researcher')
+            ->where(function($query) use ($q) {
+                $query->where('name', 'like', "%$q%")
+                      ->orWhere('email', 'like', "%$q%");
+            })
+            ->where('is_active', true)
+            ->get(['id', 'name', 'email', 'role']);
+    });
+
+    // Get approved projects for PDF generation
+Route::get('/projects/approved', function (Request $request) {
+    return \App\Models\ResearchProject::where('status', 'Approved')
+        ->with(['creator', 'departmentCenter', 'proponents.personnel'])
+        ->latest()
+        ->get()
+        ->map(function ($p) {
+            return [
+                'id'           => $p->id,
+                'reference_no' => $p->reference_no,
+                'title'        => $p->title,
+                'status'       => $p->status,
+                'budget'       => $p->budget,
+                'type'         => $p->type,
+                'start_date'   => $p->start_date,
+                'end_date'     => $p->end_date,
+                'submitted_by' => $p->creator?->name,
+                'average_score'=> $p->average_score,
+            ];
+        });
+});
+
+    Route::delete('/admin/users/{id}', [AdminController::class, 'deleteUser']);
+
+    // Proposal Form Flow
+    Route::post('/proposals/draft', [ProposalController::class, 'saveDraft']);
+    Route::post('/proposals',       [ProposalController::class, 'submit']);
+    Route::get('/proposals/my',     [ProposalController::class, 'myProposals']);
+    Route::get('/proposals/{id}',   [ProposalController::class, 'show']);
+
     // Approval Chain
     Route::get('/approval/pending',          [ApprovalController::class, 'pending']);
     Route::post('/approval/act',             [ApprovalController::class, 'act']);
+    Route::get('/approval/my-actions', [ApprovalController::class, 'myActions']);
     Route::get('/approval/history/{id}',     [ApprovalController::class, 'history']);
 
     // Admin
     Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
+        Route::get('/faculty',              [AdminController::class, 'faculty']);
         Route::get('/proposals',         [AdminController::class, 'proposals']);
         Route::get('/evaluators',        [AdminController::class, 'evaluators']);
         Route::post('/schedule',         [AdminController::class, 'schedule']);

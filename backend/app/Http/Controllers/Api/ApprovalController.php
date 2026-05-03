@@ -4,8 +4,10 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Approval;
+use App\Models\ProposalStatusHistory;
 use App\Models\ResearchProject;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class ApprovalController extends Controller
 {
@@ -39,8 +41,11 @@ class ApprovalController extends Controller
         'president'          => 'University President',
     ];
 
-    // GET /api/approval/pending
-    // Get proposals waiting for this approver's action
+    /*
+    |--------------------------------------------------------------------------
+    | GET /api/approval/pending
+    |--------------------------------------------------------------------------
+    */
     public function pending(Request $request)
     {
         $role     = $request->user()->role;
@@ -50,7 +55,6 @@ class ApprovalController extends Controller
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
-        // Required status for each step
         $requiredStatus = [
             1 => 'Evaluated',
             2 => 'Endorsed',
@@ -64,24 +68,80 @@ class ApprovalController extends Controller
             ->get()
             ->map(function ($p) {
                 return [
-                    'id'               => $p->id,
-                    'reference_no'     => $p->reference_no,
-                    'title'            => $p->title,
-                    'status'           => $p->status,
-                    'submitted_by'     => $p->creator?->name,
-                    'average_score'    => $p->average_score,
-                    'budget'           => $p->budget,
-                    'type'             => $p->type,
-                    'start_date'       => $p->start_date,
-                    'end_date'         => $p->end_date,
+                    'id'            => $p->id,
+                    'reference_no'  => $p->reference_no,
+                    'title'         => $p->title,
+                    'status'        => $p->status,
+                    'submitted_by'  => $p->creator?->name,
+                    'average_score' => $p->average_score,
+                    'budget'        => $p->budget,
+                    'type'          => $p->type,
+                    'start_date'    => $p->start_date,
+                    'end_date'      => $p->end_date,
+                    'department'    => $p->departmentCenter?->name,
+                    'created_at'    => $p->created_at,
                 ];
             });
 
         return response()->json($proposals);
     }
 
-    // POST /api/approval/act
-    // Approve, endorse, recommend, forward, reject, or return a proposal
+    /*
+    |--------------------------------------------------------------------------
+    | GET /api/approval/my-actions
+    |--------------------------------------------------------------------------
+    | Get proposals where the logged-in approver already acted.
+    */
+    public function myActions(Request $request)
+    {
+        $user = $request->user();
+
+        $actions = Approval::where('personnel_id', $user->id)
+            ->with([
+                'researchProject.creator',
+                'researchProject.departmentCenter',
+                'researchProject.evaluations',
+                'personnel',
+            ])
+            ->latest('acted_at')
+            ->get()
+            ->map(function ($approval) {
+                $project = $approval->researchProject;
+
+                return [
+                    'approval_id'      => $approval->id,
+                    'project_id'       => $project?->id,
+                    'reference_no'     => $project?->reference_no,
+                    'title'            => $project?->title,
+                    'project_status'   => $project?->status,
+                    'submitted_by'     => $project?->creator?->name,
+                    'department'       => $project?->departmentCenter?->name,
+                    'budget'           => $project?->budget,
+                    'type'             => $project?->type,
+                    'start_date'       => $project?->start_date,
+                    'end_date'         => $project?->end_date,
+                    'average_score'    => $project?->average_score,
+
+                    'sequence_no'      => $approval->sequence_no,
+                    'role_at_approval' => $approval->role_at_approval,
+                    'action'           => $approval->action,
+                    'remarks'          => $approval->remarks,
+                    'reference_action_no' => $approval->reference_no,
+                    'signature_image'  => $approval->signature_image,
+                    'signature_type'   => $approval->signature_type,
+                    'acted_at'         => $approval->acted_at?->format('Y-m-d h:i A'),
+                    'acted_at_raw'     => $approval->acted_at,
+                ];
+            });
+
+        return response()->json($actions);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | POST /api/approval/act
+    |--------------------------------------------------------------------------
+    */
     public function act(Request $request)
     {
         $role     = $request->user()->role;
@@ -102,7 +162,6 @@ class ApprovalController extends Controller
 
         $project = ResearchProject::findOrFail($data['research_project_id']);
 
-        // Determine action label
         if ($data['action'] === 'approve') {
             $actionLabel = self::ROLE_ACTION[$role];
         } elseif ($data['action'] === 'reject') {
@@ -111,32 +170,74 @@ class ApprovalController extends Controller
             $actionLabel = 'Returned';
         }
 
-        // Save approval record
-        Approval::updateOrCreate(
-            [
-                'research_project_id' => $project->id,
-                'sequence_no'         => $sequence,
-            ],
-            [
-                'personnel_id'    => $request->user()->id,
-                'role_at_approval'=> self::ROLE_LABELS[$role],
-                'action'          => $actionLabel,
-                'reference_no'    => $data['reference_no'] ?? null,
-                'remarks'         => $data['remarks'] ?? null,
-                'signature_image' => $data['signature_image'] ?? null,
-                'signature_type'  => $data['signature_type'] ?? null,
-                'acted_at'        => now(),
-            ]
-        );
+        $statusMap = [
+            'Endorsed'    => 'Endorsed',
+            'Recommended' => 'Recommended',
+            'Forwarded'   => 'Forwarded',
+            'Approved'    => 'Approved',
+            'Rejected'    => 'Rejected',
+            'Returned'    => 'For Revision',
+        ];
+
+        $newStatus = $statusMap[$actionLabel];
+
+        $approval = null;
+
+        DB::transaction(function () use (
+            $request,
+            $project,
+            $sequence,
+            $role,
+            $data,
+            $actionLabel,
+            $newStatus,
+            &$approval
+        ) {
+            $approval = Approval::updateOrCreate(
+                [
+                    'research_project_id' => $project->id,
+                    'sequence_no'         => $sequence,
+                ],
+                [
+                    'personnel_id'      => $request->user()->id,
+                    'role_at_approval'  => self::ROLE_LABELS[$role],
+                    'action'            => $actionLabel,
+                    'reference_no'      => $data['reference_no'] ?? null,
+                    'remarks'           => $data['remarks'] ?? null,
+                    'signature_image'   => $data['signature_image'] ?? null,
+                    'signature_type'    => $data['signature_type'] ?? null,
+                    'acted_at'          => now(),
+                ]
+            );
+
+            $project->update([
+                'status' => $newStatus,
+            ]);
+
+            ProposalStatusHistory::updateOrCreate(
+                [
+                    'research_project_id' => $project->id,
+                    'status'              => $newStatus,
+                ],
+                [
+                    'changed_by' => $request->user()->id,
+                    'remarks'    => $data['remarks'] ?? null,
+                ]
+            );
+        });
 
         return response()->json([
-            'message' => "Proposal {$actionLabel} successfully.",
-            'project' => $project->fresh(),
+            'message'  => "Proposal {$actionLabel} successfully.",
+            'approval' => $approval,
+            'project'  => $project->fresh(),
         ]);
     }
 
-    // GET /api/approval/history/{projectId}
-    // Get all approval records for a project
+    /*
+    |--------------------------------------------------------------------------
+    | GET /api/approval/history/{projectId}
+    |--------------------------------------------------------------------------
+    */
     public function history($projectId)
     {
         $approvals = Approval::where('research_project_id', $projectId)

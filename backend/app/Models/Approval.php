@@ -28,12 +28,8 @@ class Approval extends Model
 
     /*
     |--------------------------------------------------------------------------
-    | Sequence → Role mapping (for reference)
+    | Sequence → Role mapping
     |--------------------------------------------------------------------------
-    | 1 → rde_division_chief  → Endorsed
-    | 2 → campus_director     → Recommended
-    | 3 → vprie               → Forwarded
-    | 4 → president           → Approved / Rejected
     */
     public const SEQUENCE_ROLES = [
         1 => 'rde_division_chief',
@@ -49,30 +45,11 @@ class Approval extends Model
         4 => 'University President',
     ];
 
-    // ── Auto-advance project status when an approval is saved ─────────────────
-
-    protected static function booted(): void
-    {
-        static::created(function (Approval $approval) {
-            $project = $approval->researchProject;
-
-            $statusMap = [
-                'Endorsed'    => 'Endorsed',
-                'Recommended' => 'Recommended',
-                'Forwarded'   => 'Forwarded',
-                'Approved'    => 'Approved',
-                'Rejected'    => 'Rejected',
-                'Returned'    => 'For Revision',
-            ];
-
-            if (isset($statusMap[$approval->action])) {
-                $project->update(['status' => $statusMap[$approval->action]]);
-            }
-        });
-    }
-
-    // ── Relationships ─────────────────────────────────────────────────────────
-
+    /*
+    |--------------------------------------------------------------------------
+    | Relationships
+    |--------------------------------------------------------------------------
+    */
     public function researchProject()
     {
         return $this->belongsTo(ResearchProject::class);
