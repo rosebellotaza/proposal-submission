@@ -95,6 +95,8 @@ Route::get('/projects/approved', function (Request $request) {
     // Auth
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me',      [AuthController::class, 'me']);
+    Route::put('/profile',          [AuthController::class, 'updateProfile']);  
+    Route::put('/profile/password', [AuthController::class, 'changePassword']);  
 
     // Dashboard
     Route::get('/dashboard/stats', [DashboardController::class, 'stats']);

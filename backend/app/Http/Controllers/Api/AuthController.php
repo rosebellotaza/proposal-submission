@@ -103,4 +103,51 @@ class AuthController extends Controller
     {
         return response()->json($request->user());
     }
+
+    // PUT /api/profile
+public function updateProfile(Request $request)
+{
+    $user = $request->user();
+
+    $data = $request->validate([
+        'name'           => 'required|string|max:255',
+        'email'          => 'required|email|max:255|unique:personnel,email,' . $user->id,
+        'contact_number' => 'nullable|string|max:50',
+        'department'     => 'nullable|string|max:255',
+        'expertise'      => 'nullable|string|max:255',
+    ]);
+
+    $user->update($data);
+
+    return response()->json([
+        'message' => 'Profile updated successfully.',
+        'user'    => $user,
+    ]);
+}
+
+// PUT /api/profile/password
+public function changePassword(Request $request)
+{
+    $user = $request->user();
+
+    $data = $request->validate([
+        'current_password' => 'required|string',
+        'new_password'     => 'required|string|min:8',
+    ]);
+
+    if (!Hash::check($data['current_password'], $user->password)) {
+        return response()->json([
+            'message' => 'Current password is incorrect.',
+        ], 422);
+    }
+
+    $user->update([
+        'password' => Hash::make($data['new_password']),
+    ]);
+
+    return response()->json([
+        'message' => 'Password changed successfully.',
+    ]);
+}
+
 }

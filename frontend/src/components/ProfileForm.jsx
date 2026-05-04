@@ -8,7 +8,6 @@ import {
   CheckCircle2, AlertCircle,
 } from "lucide-react";
 
-/* ── Field ───────────────────────────────────────────────── */
 function Field({ label, icon, children }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
@@ -21,7 +20,6 @@ function Field({ label, icon, children }) {
   );
 }
 
-/* ── Password input ──────────────────────────────────────── */
 function PasswordInput({ placeholder, value, show, onToggle, onChange }) {
   return (
     <div style={{ position: "relative" }}>
@@ -49,7 +47,6 @@ function PasswordInput({ placeholder, value, show, onToggle, onChange }) {
   );
 }
 
-/* ── Main ProfileForm ────────────────────────────────────── */
 export default function ProfileForm({ accentColor = "#1f7a1f" }) {
   const session  = getSession() || {};
   const userRole = session.role_label || (session.role || "User").charAt(0).toUpperCase() + (session.role || "user").slice(1);
@@ -61,12 +58,12 @@ export default function ProfileForm({ accentColor = "#1f7a1f" }) {
   const [error,   setError]   = useState("");
 
   const [form, setForm] = useState({
-    name:    session.name    || "",
-    email:   session.email   || "",
-    phone:   session.phone   || "",
-    address: session.address || "",
-    bio:     session.bio     || "",
-    avatar:  session.avatar  || null,
+    name:           session.name           || "",
+    email:          session.email          || "",
+    contact_number: session.contact_number || "",
+    department:     session.department     || "",
+    expertise:      session.expertise      || "",
+    avatar:         session.avatar         || null,
   });
 
   const [pwForm, setPwForm] = useState({
@@ -87,8 +84,14 @@ export default function ProfileForm({ accentColor = "#1f7a1f" }) {
     if (!form.name.trim()) { setError("Name is required."); return; }
     setError(""); setSaving(true);
     try {
-      const res = await api.put("/profile", form);
-      if (typeof setSession === "function") setSession({ ...session, ...res.data });
+      const res = await api.put("/profile", {
+        name:           form.name,
+        email:          form.email,
+        contact_number: form.contact_number,
+        department:     form.department,
+        expertise:      form.expertise,
+      });
+      if (typeof setSession === "function") setSession({ ...session, ...res.data.user });
       setSuccess("Profile updated successfully!");
       setTimeout(() => setSuccess(""), 3500);
     } catch (err) {
@@ -98,9 +101,9 @@ export default function ProfileForm({ accentColor = "#1f7a1f" }) {
 
   const handleChangePassword = async () => {
     setError("");
-    if (!pwForm.current_password)                         { setError("Current password is required."); return; }
-    if (pwForm.new_password.length < 8)                   { setError("New password must be at least 8 characters."); return; }
-    if (pwForm.new_password !== pwForm.confirm_password)  { setError("Passwords do not match."); return; }
+    if (!pwForm.current_password)                        { setError("Current password is required."); return; }
+    if (pwForm.new_password.length < 8)                  { setError("New password must be at least 8 characters."); return; }
+    if (pwForm.new_password !== pwForm.confirm_password) { setError("Passwords do not match."); return; }
     setSaving(true);
     try {
       await api.put("/profile/password", {
@@ -131,16 +134,14 @@ export default function ProfileForm({ accentColor = "#1f7a1f" }) {
 
   return (
     <div>
-      {/* ── Page heading ── */}
       <div style={{ marginBottom: 24 }}>
-        <h3  style={{ margin: "4px 0 0", fontSize: 13, color: "#6b7280" }}>
+        <h3 style={{ margin: "4px 0 0", fontSize: 13, color: "#6b7280" }}>
           Manage your personal information and account settings
         </h3>
       </div>
 
-      {/* ── Hero card ── */}
+      {/* Hero card */}
       <div style={{ ...CARD, display: "flex", alignItems: "center", gap: 20, flexWrap: "wrap" }}>
-        {/* Avatar */}
         <div style={{ position: "relative", flexShrink: 0 }}>
           <div style={{
             width: 72, height: 72, borderRadius: "50%",
@@ -167,7 +168,6 @@ export default function ProfileForm({ accentColor = "#1f7a1f" }) {
           <input ref={fileRef} type="file" accept="image/*"
             style={{ display: "none" }} onChange={handleAvatarChange} />
         </div>
-        {/* Info */}
         <div>
           <p style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "#111827" }}>{form.name || "—"}</p>
           <p style={{ margin: "3px 0 0", fontSize: 13, color: "#6b7280" }}>{form.email}</p>
@@ -181,7 +181,7 @@ export default function ProfileForm({ accentColor = "#1f7a1f" }) {
         </div>
       </div>
 
-      {/* ── Alerts ── */}
+      {/* Alerts */}
       {error && (
         <div style={{ display: "flex", alignItems: "center", gap: 10, background: "#fef2f2",
           color: "#dc2626", padding: "12px 16px", borderRadius: 10, marginBottom: 16, fontSize: 14 }}>
@@ -195,7 +195,7 @@ export default function ProfileForm({ accentColor = "#1f7a1f" }) {
         </div>
       )}
 
-      {/* ── Tabs ── */}
+      {/* Tabs */}
       <div style={{ display: "flex", gap: 4, marginBottom: 20 }}>
         {[{ key: "profile", label: "Profile Information" }, { key: "password", label: "Change Password" }].map(t => (
           <button key={t.key}
@@ -212,7 +212,7 @@ export default function ProfileForm({ accentColor = "#1f7a1f" }) {
         ))}
       </div>
 
-      {/* ══ PROFILE INFORMATION ══ */}
+      {/* Profile Information Tab */}
       {tab === "profile" && (
         <div style={CARD}>
           <h3 style={{ margin: "0 0 20px", fontSize: 15, fontWeight: 700, color: "#111827" }}>
@@ -227,20 +227,20 @@ export default function ProfileForm({ accentColor = "#1f7a1f" }) {
               <input className="cp-input" type="email" placeholder="your@email.com"
                 value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} />
             </Field>
-            <Field label="Phone Number" icon={<Phone size={14} color="#9ca3af" />}>
-              <input className="cp-input" type="tel" placeholder="+63 9XX XXX XXXX"
-                value={form.phone} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))} />
+            <Field label="Contact Number" icon={<Phone size={14} color="#9ca3af" />}>
+              <input className="cp-input" type="tel" placeholder="e.g. 09123456789"
+                value={form.contact_number} onChange={e => setForm(p => ({ ...p, contact_number: e.target.value }))} />
             </Field>
-            <Field label="Address" icon={<MapPin size={14} color="#9ca3af" />}>
-              <input className="cp-input" type="text" placeholder="City, Province"
-                value={form.address} onChange={e => setForm(p => ({ ...p, address: e.target.value }))} />
+            <Field label="Department" icon={<MapPin size={14} color="#9ca3af" />}>
+              <input className="cp-input" type="text" placeholder="e.g. College of Education"
+                value={form.department} onChange={e => setForm(p => ({ ...p, department: e.target.value }))} />
             </Field>
             <div style={{ gridColumn: "1 / -1" }}>
-              <Field label="Bio / About">
+              <Field label="Expertise / Bio">
                 <textarea
-                  placeholder="Write a short bio about yourself..."
-                  value={form.bio}
-                  onChange={e => setForm(p => ({ ...p, bio: e.target.value }))}
+                  placeholder="Write your expertise or a short bio..."
+                  value={form.expertise}
+                  onChange={e => setForm(p => ({ ...p, expertise: e.target.value }))}
                   style={{
                     width: "100%", padding: "9px 12px", border: "1px solid #d1d5db",
                     borderRadius: 8, fontSize: 14, outline: "none", color: "#111827",
@@ -263,7 +263,7 @@ export default function ProfileForm({ accentColor = "#1f7a1f" }) {
         </div>
       )}
 
-      {/* ══ CHANGE PASSWORD ══ */}
+      {/* Change Password Tab */}
       {tab === "password" && (
         <div style={CARD}>
           <h3 style={{ margin: "0 0 6px", fontSize: 15, fontWeight: 700, color: "#111827" }}>
