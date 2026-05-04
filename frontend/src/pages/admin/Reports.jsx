@@ -45,6 +45,7 @@ const STATUS_STYLE = {
   "Under Evaluation": { bg: "#f5f3ff", color: "#6d28d9", border: "#ddd6fe" },
 };
 
+
 /* Score Bar */
 function ScoreBar({ score = 0 }) {
   const safeScore = Number(score || 0);
@@ -140,6 +141,8 @@ const PieLabel = ({ cx, cy, midAngle, outerRadius, name, percent }) => {
     </text>
   );
 };
+
+
 
 /* Reports Page */
 export default function Reports() {

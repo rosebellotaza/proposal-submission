@@ -1,6 +1,3 @@
-// Faculty list organized by college
-// Used for evaluator selection in proposals
-
 export const FACULTY_BY_COLLEGE = {
   "College of Computer Studies": [
     { id: "cs-001", name: "Dr. Maria Santos",     position: "Professor",           expertise: "Artificial Intelligence & Machine Learning" },

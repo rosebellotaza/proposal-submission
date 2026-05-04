@@ -3,7 +3,7 @@ import api from './api';
 // ── Auth Helpers ─────────────────────────────────────────────────────────────
 const SESSION_KEY = 'pms_session';
 
-// ── Session ───────────────────────────────────────────────────────────────────
+// ── Session ─────────────────────────────────────────────────────────────────
 export function setSession(user) {
   localStorage.setItem(SESSION_KEY, JSON.stringify(user));
   localStorage.setItem('role', user.role);
@@ -22,7 +22,7 @@ export function clearSession() {
   localStorage.removeItem('role');
 }
 
-// ── Role → route ──────────────────────────────────────────────────────────────
+// ── Role → route ────────────────────────────────────────────────────────────
 export function dashboardRoute(role) {
   const routes = {
     researcher:         "/researcher/dashboard",
@@ -36,23 +36,30 @@ export function dashboardRoute(role) {
   return routes[role] || "/login";
 }
 
-// ── API Auth calls ────────────────────────────────────────────────────────────
+// ── API Auth calls ──────────────────────────────────────────────────────────
 export async function loginUser(email, password, role) {
   const response = await api.post('/login', { email, password, role });
   const { user, token } = response.data;
+
   setSession({ ...user, token });
   return user;
 }
 
-export async function registerUser(name, email, password, role) {
+export async function registerUser(name, email, password, role, profile) {
   const response = await api.post('/register', {
     name,
     email,
     password,
     password_confirmation: password,
     role,
+
+    department: profile?.department || null,
+    position: profile?.position ? String(profile.position) : null,
+    program:    profile?.program    || null,
   });
+
   const { user, token } = response.data;
+
   setSession({ ...user, token });
   return user;
 }

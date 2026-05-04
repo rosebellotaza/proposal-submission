@@ -1,4 +1,3 @@
-// src/pages/admin/EvaluatorManagement.jsx
 import { useState, useEffect } from "react";
 import AdminNavbar from "../../components/admin/navbar";
 import Topbar from "../../components/Topbar";
@@ -12,8 +11,15 @@ const STATUS = {
   Inactive: { bg: "#f3f4f6", color: "#6b7280", border: "#e5e7eb" },
 };
 
+/* normalise whatever the API returns into "Active" | "Inactive" */
+const resolveStatus = (e) => {
+  if (typeof e.is_active === "boolean") return e.is_active ? "Active" : "Inactive";
+  if (e.status === "Active" || e.status === "Inactive") return e.status;
+  return "Inactive";
+};
+
 const EMPTY_FORM = {
-  name: "", email: "", expertise: "", position: "", status: "Active", join_date: "",
+  name: "", email: "", position: "", department: "", program: "", status: "Active",
 };
 
 /* ── Field helper ────────────────────────────────────────── */
@@ -63,10 +69,6 @@ function EvaluatorModal({ initial = EMPTY_FORM, onClose, onSave, saving }) {
               <input style={M.input} type="email" placeholder="e.g. amanda@university.edu"
                 value={form.email} onChange={e => set("email", e.target.value)} />
             </Field>
-            <Field label="Expertise">
-              <input style={M.input} placeholder="e.g. Machine Learning"
-                value={form.expertise} onChange={e => set("expertise", e.target.value)} />
-            </Field>
             <Field label="Position">
               <select style={M.input} value={form.position} onChange={e => set("position", e.target.value)}>
                 <option value="">Select position</option>
@@ -74,15 +76,20 @@ function EvaluatorModal({ initial = EMPTY_FORM, onClose, onSave, saving }) {
                 <option>Evaluator</option>
               </select>
             </Field>
+            <Field label="Department">
+              <input style={M.input} placeholder="e.g. College of Engineering"
+                value={form.department || ""} onChange={e => set("department", e.target.value)} />
+            </Field>
+
+            <Field label="Program">
+              <input style={M.input} placeholder="e.g. MS Computer Science"
+                value={form.program || ""} onChange={e => set("program", e.target.value)} />
+            </Field>
             <Field label="Status">
               <select style={M.input} value={form.status} onChange={e => set("status", e.target.value)}>
                 <option>Active</option>
                 <option>Inactive</option>
               </select>
-            </Field>
-            <Field label="Join Date">
-              <input style={M.input} type="date"
-                value={form.join_date} onChange={e => set("join_date", e.target.value)} />
             </Field>
           </div>
           <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
@@ -151,10 +158,10 @@ export default function EvaluatorManagement() {
       .then(r => { setEvaluators(r.data); setFiltered(r.data); })
       .catch(() => {
         const mock = [
-          { id: 1, evaluator_id: "E001", name: "Dr. Amanda Rodriguez", email: "amanda.rodriguez@university.edu", expertise: "Machine Learning",    position: "Senior Evaluator", assigned: 5, status: "Active",   join_date: "2021-02-10" },
-          { id: 2, evaluator_id: "E002", name: "Dr. James Thompson",   email: "james.thompson@university.edu",  expertise: "Biotechnology",        position: "Evaluator",        assigned: 3, status: "Active",   join_date: "2021-07-15" },
-          { id: 3, evaluator_id: "E003", name: "Dr. Lisa Park",        email: "lisa.park@university.edu",       expertise: "Environmental Science", position: "Senior Evaluator", assigned: 4, status: "Active",   join_date: "2020-11-20" },
-          { id: 4, evaluator_id: "E004", name: "Dr. David Kumar",      email: "david.kumar@university.edu",     expertise: "Physics",               position: "Evaluator",        assigned: 0, status: "Inactive", join_date: "2019-05-08" },
+          { id: 1, evaluator_id: "E001", name: "Dr. Amanda Rodriguez", email: "amanda.rodriguez@university.edu", position: "Senior Evaluator", assigned: 5, status: "Active" },
+          { id: 2, evaluator_id: "E002", name: "Dr. James Thompson",   email: "james.thompson@university.edu",  position: "Evaluator",        assigned: 3, status: "Active"},
+          { id: 3, evaluator_id: "E003", name: "Dr. Lisa Park",        email: "lisa.park@university.edu",       position: "Senior Evaluator", assigned: 4, status: "Active" },
+          { id: 4, evaluator_id: "E004", name: "Dr. David Kumar",      email: "david.kumar@university.edu",     position: "Evaluator",        assigned: 0, status: "Inactive" },
         ];
         setEvaluators(mock); setFiltered(mock);
       })
@@ -167,7 +174,7 @@ export default function EvaluatorManagement() {
     setFiltered(evaluators.filter(e =>
       e.name?.toLowerCase().includes(q) ||
       e.email?.toLowerCase().includes(q) ||
-      e.expertise?.toLowerCase().includes(q)
+      e.position?.toLowerCase().includes(q)
     ));
   }, [search, evaluators]);
 
@@ -212,7 +219,8 @@ export default function EvaluatorManagement() {
 
         <div style={{ marginLeft: ml, flex: 1, display: "flex", flexDirection: "column", transition: "margin-left 0.22s ease", minWidth: 0 }}>
 
-            <Topbar title="Evaluator Management" />
+        <Topbar title="Evaluator Management" />
+
           {/* ── Body ── */}
           <div style={{ padding: "24px", flex: 1 }}>
 
@@ -242,7 +250,7 @@ export default function EvaluatorManagement() {
               }}>
                 <Search size={18} color="#9ca3af" strokeWidth={1.8} />
                 <input value={search} onChange={e => setSearch(e.target.value)}
-                  placeholder="Search by name, email, or expertise..."
+                  placeholder="Search by name or email..."
                   style={{ flex: 1, border: "none", outline: "none", fontSize: 14, color: "#111827", padding: "14px 0", background: "transparent" }} />
               </div>
 
@@ -284,14 +292,15 @@ export default function EvaluatorManagement() {
                     <table className="em-table">
                       <thead>
                         <tr>
-                          {["ID","Name","Email","Expertise","Position","Assigned","Status","Join Date","Actions"].map(h => (
+{["ID","Name","Email","Department","Program","Position","Assigned","Status","Actions"].map(h => (
                             <th key={h}>{h}</th>
                           ))}
                         </tr>
                       </thead>
                       <tbody>
                         {filtered.map(e => {
-                          const sb  = STATUS[e.status] || STATUS.Inactive;
+                          const sb  = STATUS[resolveStatus(e)] || STATUS.Inactive;
+                          const statusLabel = resolveStatus(e);
                           const asg = e.assigned ?? 0;
                           const asgColor = asg > 0 ? { bg:"#eff6ff", color:"#1d4ed8", border:"#bfdbfe" } : { bg:"#f3f4f6", color:"#6b7280", border:"#e5e7eb" };
                           return (
@@ -301,12 +310,8 @@ export default function EvaluatorManagement() {
                               </td>
                               <td style={{ fontWeight: 500, color: "#111827" }}>{e.name}</td>
                               <td style={{ color: "#6b7280" }}>{e.email}</td>
-                              <td>
-                                <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                                  <GraduationCap size={14} color="#9ca3af" strokeWidth={1.8} />
-                                  {e.expertise}
-                                </span>
-                              </td>
+                              <td>{e.department}</td>
+                              <td>{e.program}</td>
                               <td>{e.position}</td>
                               <td>
                                 <span style={{
@@ -323,10 +328,9 @@ export default function EvaluatorManagement() {
                                   fontSize: 12, fontWeight: 600,
                                   background: sb.bg, color: sb.color, border: `1px solid ${sb.border}`,
                                 }}>
-                                  {e.status}
+                                  {statusLabel}
                                 </span>
                               </td>
-                              <td style={{ color: "#6b7280" }}>{e.join_date}</td>
                               <td>
                                 <div style={{ display: "flex", gap: 8 }}>
                                   <button onClick={() => setEditing(e)} title="Edit"
@@ -349,7 +353,8 @@ export default function EvaluatorManagement() {
                   {/* Mobile cards */}
                   <div className="em-cards" style={{ padding: "14px 16px" }}>
                     {filtered.map(e => {
-                      const sb  = STATUS[e.status] || STATUS.Inactive;
+                      const sb  = STATUS[resolveStatus(e)] || STATUS.Inactive;
+                      const statusLabel = resolveStatus(e);
                       const asg = e.assigned ?? 0;
                       const asgColor = asg > 0 ? { bg:"#eff6ff", color:"#1d4ed8", border:"#bfdbfe" } : { bg:"#f3f4f6", color:"#6b7280", border:"#e5e7eb" };
                       return (
@@ -361,7 +366,7 @@ export default function EvaluatorManagement() {
                             </div>
                             <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
                               <span style={{ padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 600, background: sb.bg, color: sb.color, border: `1px solid ${sb.border}` }}>
-                                {e.status}
+                                {statusLabel}
                               </span>
                               <span style={{ padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 600, background: asgColor.bg, color: asgColor.color, border: `1px solid ${asgColor.border}` }}>
                                 {asg} project{asg !== 1 ? "s" : ""}
@@ -370,9 +375,9 @@ export default function EvaluatorManagement() {
                           </div>
                           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "5px 12px", fontSize: 12, color: "#6b7280", marginBottom: 12 }}>
                             <span><b style={{ color: "#374151" }}>Email:</b> {e.email}</span>
-                            <span><b style={{ color: "#374151" }}>Expertise:</b> {e.expertise}</span>
                             <span><b style={{ color: "#374151" }}>Position:</b> {e.position}</span>
-                            <span><b style={{ color: "#374151" }}>Joined:</b> {e.join_date}</span>
+                            <span><b style={{ color: "#374151" }}>Dept:</b> {e.department || "—"}</span>
+                            <span><b style={{ color: "#374151" }}>Program:</b> {e.program || "—"}</span>
                           </div>
                           <div style={{ display: "flex", gap: 10 }}>
                             <button onClick={() => setEditing(e)}
@@ -396,7 +401,7 @@ export default function EvaluatorManagement() {
       </div>
 
       {showAdd  && <EvaluatorModal onClose={() => setShowAdd(false)} onSave={handleSave} saving={saving} />}
-      {editing  && <EvaluatorModal initial={editing} onClose={() => setEditing(null)} onSave={handleSave} saving={saving} />}
+      {editing  && <EvaluatorModal initial={{ ...editing, status: resolveStatus(editing) }} onClose={() => setEditing(null)} onSave={handleSave} saving={saving} />}
       {deleting && <DeleteModal evaluator={deleting} onClose={() => setDeleting(null)} onConfirm={handleDelete} deleting={isDeleting} />}
     </>
   );

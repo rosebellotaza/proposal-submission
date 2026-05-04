@@ -27,13 +27,9 @@ class Personnel extends Authenticatable
         'email',
         'password',
         'role',
-        'gender',
-        'rank',
-        'contact_number',
-        'expertise',
         'department',
         'position',
-        'join_date',
+        'program',
         'is_active',
     ];
 

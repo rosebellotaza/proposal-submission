@@ -26,8 +26,8 @@ return new class extends Migration
     {
         Schema::create('personnel', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('college_id')->nullable()->constrained('colleges')->nullOnDelete();
-            $table->foreignId('department_center_id')->nullable()->constrained('department_centers')->nullOnDelete();
+            $table->unsignedBigInteger('college_id')->nullable();
+            $table->unsignedBigInteger('department_center_id')->nullable();
 
             $table->string('name');
             $table->string('email')->unique();
@@ -43,10 +43,9 @@ return new class extends Migration
                 'admin',
             ]);
 
-            $table->string('gender', 10)->nullable();           // Male / Female
-            $table->string('rank')->nullable();                 // e.g. Professor, Associate Professor
-            $table->string('contact_number', 20)->nullable();
-            $table->string('expertise')->nullable();            // For evaluators
+            $table->string('department')->nullable();           
+            $table->string('position')->nullable();             
+            $table->string('program')->nullable();                 
             $table->boolean('is_active')->default(true);
 
             $table->rememberToken();

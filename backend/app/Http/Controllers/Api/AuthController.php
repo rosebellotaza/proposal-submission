@@ -21,6 +21,7 @@ class AuthController extends Controller
 
             'department'            => 'nullable|string|max:255',
             'position'              => 'nullable|string|max:255',
+            'program'               => 'nullable|string|max:255',
             'rank'                  => 'nullable|string|max:255',
             'expertise'             => 'nullable|string|max:255',
             'join_date'             => 'nullable|date',
@@ -36,6 +37,7 @@ class AuthController extends Controller
             'department' => $data['department'] ?? null,
             'position'   => $data['position'] ?? null,
             'rank'       => $data['rank'] ?? null,
+            'program'    => $data['program'] ?? null,
             'expertise'  => $data['expertise'] ?? null,
             'join_date'  => $data['join_date'] ?? null,
             'is_active'  => $data['is_active'] ?? true,

@@ -207,7 +207,7 @@ export default function Dashboard() {
             )}
           </div>
 
-          {/* ── Recent Activity ── */}
+          {/* ── Recent Activity ──
           {stats?.recent_activity?.length > 0 && (
             <div className="activity-box">
               <h3>Recent Activity</h3>
@@ -226,7 +226,7 @@ export default function Dashboard() {
                 ))}
               </ul>
             </div>
-          )}
+          )} */}
 
         </div>
       </div>
